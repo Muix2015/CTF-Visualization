@@ -19,10 +19,8 @@
 
 			var container;
 			var camera, scene, renderer;
-			var plane, cube;
-			var mouse, raycaster, isShiftDown = false;
 
-			var rollOverMesh, rollOverMaterial;
+			var teamMesh, teamMaterial;
 			var cubeGeo, cubeMaterial,cubeMesh;
 			var tween;
 
@@ -55,39 +53,59 @@
 			    }
 			}
 
-			function attack( start , end , time ){
-
+			function attack( startTeam , endTeam , time ){
 				var missile = dae.clone();
-				var trajectory =  new THREE.SplineCurve3([
-									    new THREE.Vector3(start.x, start.y, 0),
-									    new THREE.Vector3(start.x+(end.x-start.x)/3, start.y+(end.y-start.y)/3, 400),
-									    new THREE.Vector3(end.x-(end.x-start.x)/3, end.y-(end.y-start.y)/3, 400),
-									    new THREE.Vector3(end.x, end.y, 0)
-									]);
-				// var geometry = new THREE.Geometry();
-				// geometry.vertices = trajectory.getPoints(50);
-				// var material = new THREE.LineBasicMaterial({color : 0xff0000});
-				// var line = new THREE.Line(geometry, material);
+				var RAD_90  = 90/180*Math.PI;
+				var quaternion = new THREE.Quaternion();
+				var rotation = new THREE.Euler();
 
-				// console.log(curve.getTangentAt(1));
+				var startPos 	= 	startTeam.core.position;
+				var endPos 		= 	endTeam.core.position;
+				var dx = endPos.x - startPos.x;
+				var dy = endPos.y - startPos.y;
+				var d = Math.sqrt(dx*dx+dy*dy);
 
-				// scene.add( line );
+				var missileVec = new THREE.Vector3(0,-1,0);
 
-				var kk = {
-					pos:0
+
+				var offset = new THREE.Vector3(0,0,RAD_90);
+
+
+				var trajectory = {
+					curve :	 new THREE.SplineCurve3([
+									    new THREE.Vector3(startPos.x, startPos.y, 0),
+									    new THREE.Vector3(startPos.x + dx/3, startPos.y + dy/3, d/4), 
+									    new THREE.Vector3(endPos.x - dx/3, endPos.y - dy/3, d/4),
+									    new THREE.Vector3(endPos.x, endPos.y, 0)
+									]),
+					pos : 0
 				}
+
+				var geometry = new THREE.Geometry();
+				geometry.vertices = trajectory.curve.getPoints(50);
+				var material = new THREE.LineBasicMaterial({color : 0xff0000});
+				var line = new THREE.Line(geometry, material);
+
+				scene.add( line );
+
 				scene.add(missile);
-				new TWEEN.Tween( kk )
+				var tangent; 
+				new TWEEN.Tween( trajectory )
 									.to({pos:1},time)
 									.onUpdate(function(){
-										missile.position.copy(trajectory.getPointAt(kk.pos));
-										missile.rotation.y= -trajectory.getTangentAt(kk.pos).z;
-										// console.log(trajectory.getPointAt(kk.pos));
+										missile.position.copy(trajectory.curve.getPointAt(trajectory.pos));
+										tangent = trajectory.curve.getTangentAt(trajectory.pos).normalize();
+										quaternion.setFromUnitVectors(missileVec , tangent)
+										rotation.setFromQuaternion(quaternion,'XYZ');
+										missile.rotation.set(rotation.x,rotation.y,rotation.z);
+
 									})
-									// .onStop(function(){
-									// 	scene.remove(missile);
-									// 	missile = null;
-									// })
+									.onComplete(function(){
+										scene.remove(missile);
+										missile = null;
+										scene.remove(line);
+										line = null;
+									})
 									.start();
 			}
 
@@ -133,14 +151,16 @@
 
 				// roll-over helpers
 
-				rollOverGeo = new THREE.BoxGeometry( 50, 50, 50 );
-				rollOverMaterial = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
-				rollOverMesh = new THREE.Mesh( rollOverGeo, rollOverMaterial );
+				teamGeo = new THREE.BoxGeometry( 50, 50, 50 );
+				teamMaterial = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
+				teamMesh = new THREE.Mesh( teamGeo, teamMaterial );
 				for(var i=0;i<16;i++){
-					var newMesh = rollOverMesh.clone();
+
+					var newMesh = teamMesh.clone();
 					newMesh.position.set(-900+(i%4)*600,-900+Math.floor(i/4)*600,0);
 					scene.add(newMesh);
-					// teamsData[i].core = newMesh;
+
+
 					teamsData[i]={
 						core:newMesh,
 						logo:null,
@@ -151,36 +171,8 @@
 				}
 
 
-				// rollOverMesh1.position.set(-600,0,25);
-				// rollOverMesh2.position.set(600,0,25);
-				// scene.add( rollOverMesh1 );
-				// scene.add( rollOverMesh2 );
-
-				curve = new THREE.SplineCurve3([
-				    new THREE.Vector3(-600, 0, 0),
-				    new THREE.Vector3(-200, 0, 300),
-				    new THREE.Vector3(200, 0, 300),
-				    new THREE.Vector3(600, 0, 0),
-				]);
 
 
-				// var geometry = new THREE.Geometry();
-				// geometry.vertices = curve.getPoints(50);
-				// var material = new THREE.LineBasicMaterial({color : 0xff0000});
-				// var line = new THREE.Line(geometry, material);
-
-				// console.log(curve.getTangentAt(1));
-
-				// scene.add( line );
-
-				// cubes
-
-				cubeGeo = new THREE.BoxGeometry( 200, 50, 50 );
-				cubeMaterial = new THREE.MeshLambertMaterial( { color: 0xfeb74c } );
-
-				cubeMesh = new THREE.Mesh(cubeGeo,cubeMaterial);
-				scene.add( cubeMesh );
-				console.log(cubeMesh.rotation);
 				loader.load( 'models/miss.dae', function ( collada ) {
 					dae = collada.scene;
 					dae.traverse( function ( child ) {
@@ -190,10 +182,10 @@
 							}
 					});
 					dae.position.set(0,0,0);
-					dae.rotation.z= 90/180*Math.PI;
-					dae.scale.set(1,0.5,1);
+					// dae.rotation.z += 90/180*Math.PI;
+					dae.scale.set(1,1,1);
 					scene.add( dae );
-					attack(teamsData[0].core.position,teamsData[3].core.position,2000);
+					attack(teamsData[0],teamsData[12],5000);
 				}, onProgress, onError);
 
 
