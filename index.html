@@ -10,7 +10,7 @@
 	<script src="js/libs/tween.min.js"></script>
 	<script src="js/libs/three.min.js"></script>
 	<script src="js/loaders/OBJLoader.js"></script>
-	<script src="js/loaders/ColladaLoader.js"></script>
+	<script src="js/loaders/ColladaLoader2.js"></script>
 	<script src="js/controls/TrackballControls.js"></script>
 	<script src="js/renderers/Projector.js"></script>
 	<script src="js/renderers/CanvasRenderer.js"></script>
@@ -25,6 +25,11 @@
 
 			var missileDae;
 
+			var missileLauncher = new THREE.Group();
+
+			var missileVec = new THREE.Vector3(1,0,0);
+			var launcherVec = new THREE.Vector3(-1,0,0);
+
 			var teamsData = [];
 
 			init();
@@ -32,6 +37,7 @@
 
 
 			function attack( startTeam , endTeam , time ){
+
 				var missile = missileDae.clone();
 				var quaternion = new THREE.Quaternion();
 				var rotation = new THREE.Euler();
@@ -42,7 +48,7 @@
 				var dy = endPos.y - startPos.y;
 				var d = Math.sqrt(dx*dx+dy*dy);
 
-				var missileVec = new THREE.Vector3(0,-1,0);
+				var targetVec = new THREE.Vector3(dx,dy,0);
 
 
 				var offset = new THREE.Vector3(0,0,RAD_90);
@@ -50,41 +56,76 @@
 
 				var trajectory = {
 					curve :	 new THREE.SplineCurve3([
-									    new THREE.Vector3(startPos.x, startPos.y, 0),
+									    new THREE.Vector3(startPos.x, startPos.y, 100),
 									    new THREE.Vector3(startPos.x + dx/3, startPos.y + dy/3, d/4), 
 									    new THREE.Vector3(endPos.x - dx/3, endPos.y - dy/3, d/4),
-									    new THREE.Vector3(endPos.x, endPos.y, 0)
+									    new THREE.Vector3(endPos.x, endPos.y, 100)
 									]),
 					pos : 0
 				}
 
 				var geometry = new THREE.Geometry();
 				geometry.vertices = trajectory.curve.getPoints(50);
-				var material = new THREE.LineBasicMaterial({color : 0xff0000});
+				var material = new THREE.LineBasicMaterial({color : 0xee00ee});
 				var line = new THREE.Line(geometry, material);
 
-				// scene.add( line );
+				scene.add( line );
 
-				scene.add(missile);
+
 				var tangent; 
-				new TWEEN.Tween( trajectory )
-									.to({pos:1},time)
-									.onUpdate(function(){
-										missile.position.copy(trajectory.curve.getPointAt(trajectory.pos));
-										tangent = trajectory.curve.getTangentAt(trajectory.pos).normalize();
-										quaternion.setFromUnitVectors(missileVec , tangent)
-										rotation.setFromQuaternion(quaternion,'XYZ');
-										missile.rotation.set(rotation.x,rotation.y,rotation.z);
+				var launch = new TWEEN.Tween( trajectory )
+														.to({pos:1},time)
+														.onStart(function(){
+															scene.add(missile);
+															// startTeam.core.rotation.z = targetVec.angleTo(missileVec)-RAD_90;
+															startTeam.core.children[1].visible = false;
+															// setTimeout(setVisible(startTeam.core.children[1],true),1000);
+															// console.log(startTeam.core);
+														})
+														.onUpdate(function(){
+															missile.position.copy(trajectory.curve.getPointAt(trajectory.pos));
+															tangent = trajectory.curve.getTangentAt(trajectory.pos).normalize();
+															quaternion.setFromUnitVectors(missileVec , tangent);
+															rotation.setFromQuaternion(quaternion,'XYZ');
+															missile.rotation.set(rotation.x,rotation.y,rotation.z);
 
-									})
-									.onComplete(function(){
-										scene.remove(missile);
-										missile = null;
-										// scene.remove(line);
-										line = null;
-									})
-									.start();
+														})
+														.onComplete(function(){
+															scene.remove(missile);
+															missile = null;
+															scene.remove(line);
+															line = null;
+															startTeam.core.children[1].visible = true;
+														});
+				var rot = launcherVec.angleTo(targetVec);
+
+				rot = dy > 0 ? -rot :rot;
+
+
+				var aim = new TWEEN.Tween( startTeam.core.rotation )
+														.to({z:rot},500)
+														.onComplete(function(){
+															launch.start();
+														})
+														.start();
+
 			}
+
+			function setVisible(obj,visible){
+				obj.visible = visible;
+			}
+
+			function attactTest(){
+				var startIndex = Math.ceil(Math.random()*15);
+				var endIndex;
+				do{
+					endIndex = Math.ceil(Math.random()*15);
+				}while(endIndex == startIndex);
+				attack(teamsData[startIndex],teamsData[endIndex],1800);
+				var time = Math.ceil(Math.random()*3000);
+				setTimeout(attactTest,time);
+			}
+
 
 			function init() {
 
@@ -111,7 +152,7 @@
 				stats = new Stats();
 				stats.domElement.style.position = 'absolute';
 				stats.domElement.style.top = '0px';
-				container.appendChild( stats.domElement );
+				// container.appendChild( stats.domElement );
 
 
 				var loader = new THREE.ColladaLoader();
@@ -131,43 +172,66 @@
 				teamGeo = new THREE.BoxGeometry( 50, 50, 50 );
 				teamMaterial = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
 				teamMesh = new THREE.Mesh( teamGeo, teamMaterial );
-				for(var i=0;i<16;i++){
-
-					var newMesh = teamMesh.clone();
-					newMesh.position.set(-900+(i%4)*600,-900+Math.floor(i/4)*600,0);
-					scene.add(newMesh);
-
-
-					teamsData[i]={
-						core:newMesh,
-						logo:null,
-						HP:100,
-						currentHP:100,
-						position:newMesh.position
-					}
-				}
 
 
 
-
-				loader.load( 'models/miss.dae', function ( collada ) {
-					missileDae = collada.scene;
-					missileDae.traverse( function ( child ) {
+				loader.load( 'models/missileLauncherP1.dae', function ( collada ) {
+					var p1 = collada.scene;
+					p1.traverse( function ( child ) {
 						if ( child instanceof THREE.SkinnedMesh ) {
 								var animation = new THREE.Animation( child, child.geometry.animation );
 								animation.play();
 							}
 					});
-					missileDae.position.set(0,0,0);
-					// missileDae.rotation.z += 90/180*Math.PI;
-					missileDae.scale.set(1,1,1);
+					// launcher.position.set(0,0,0);
+					p1.scale.set(20,20,20);
+					p1.rotation.x = 0;
 
-					attack(teamsData[0],teamsData[12],5000);
-				}, onProgress, onError);
+					loader.load( 'models/missileLauncherP2.dae', function ( collada ) {
+						var p2 = collada.scene;
+						p2.traverse( function ( child ) {
+							if ( child instanceof THREE.SkinnedMesh ) {
+									var animation = new THREE.Animation( child, child.geometry.animation );
+									animation.play();
+								}
+						});
+						p2.scale.set(20,20,20);
+						p2.rotation.x = 0;
 
-				loader.load( 'models/miss.dae', function ( collada ) {
-					var lancher = collada.scene;
-					scene.add(lancher);
+						missileLauncher.add(p1);
+						missileLauncher.add(p2);
+						// scene.add(missileLauncher);
+
+						for(var i=0;i<16;i++){
+							var newMesh = missileLauncher.clone();
+							newMesh.position.set(-900+(i%4)*600,-900+Math.floor(i/4)*600,0);
+							newMesh.rotation.z = Math.random()*RAD_90*4;
+							scene.add(newMesh);
+
+							teamsData[i]={
+								core:newMesh,
+								logo:null,
+								HP:100,
+								currentHP:100,
+								position:newMesh.position
+							}
+						}
+
+						loader.load( 'models/missile.dae', function ( collada ) {
+							missileDae = collada.scene;
+							missileDae.traverse( function ( child ) {
+								if ( child instanceof THREE.SkinnedMesh ) {
+										var animation = new THREE.Animation( child, child.geometry.animation );
+										animation.play();
+									}
+							});
+							missileDae.scale.set(20,20,20);
+							missileDae.rotation.x = 0;
+							attactTest();
+						}, onProgress, onError);
+
+					}, onProgress, onError);
+
 				}, onProgress, onError);
 
 
