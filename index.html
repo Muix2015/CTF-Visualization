@@ -165,6 +165,11 @@
 					attack(teamsData[0],teamsData[12],5000);
 				}, onProgress, onError);
 
+				loader.load( 'models/miss.dae', function ( collada ) {
+					var lancher = collada.scene;
+					scene.add(lancher);
+				}, onProgress, onError);
+
 
 				// grid
 
