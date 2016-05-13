@@ -152,7 +152,7 @@
 				stats = new Stats();
 				stats.domElement.style.position = 'absolute';
 				stats.domElement.style.top = '0px';
-				// container.appendChild( stats.domElement );
+				container.appendChild( stats.domElement );
 
 
 				var loader = new THREE.ColladaLoader();
@@ -172,6 +172,13 @@
 				teamGeo = new THREE.BoxGeometry( 50, 50, 50 );
 				teamMaterial = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
 				teamMesh = new THREE.Mesh( teamGeo, teamMaterial );
+
+				// var flagGeo = new THREE.BoxGeometry( 3, 3, 500 );
+				// var flagMaterial = new THREE.MeshBasicMaterial( { color: 0x000000 } );
+				
+				var flagGeo = new THREE.BoxGeometry( 5, 5, 375 );
+				var flagMaterial = new THREE.MeshPhongMaterial( { color: 0xffffff, specular: 0x111111, shininess: 100 } );
+				var flagMesh = new THREE.Mesh( flagGeo, flagMaterial );
 
 
 
@@ -204,9 +211,12 @@
 
 						for(var i=0;i<16;i++){
 							var newMesh = missileLauncher.clone();
+							var flag = flagMesh.clone();
 							newMesh.position.set(-900+(i%4)*600,-900+Math.floor(i/4)*600,0);
+							flag.position.copy(newMesh.position);
 							newMesh.rotation.z = Math.random()*RAD_90*4;
 							scene.add(newMesh);
+							scene.add(flag);
 
 							teamsData[i]={
 								core:newMesh,
