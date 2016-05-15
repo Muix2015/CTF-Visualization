@@ -18,12 +18,13 @@
 	var launcherVec = new THREE.Vector3(0,-1,0);
 
 	//偏移量   模型加载进来时的位置可能并不是在坐标原点，需要通过偏移量调整
-	var flagOffset = new THREE.Vector3(0,-60,180);
 	var baseOffset = new THREE.Vector3(0,0,-60);
 	var serviceOffset =  new THREE.Vector3(0,0,0);
+	var logoOffset = new THREE.Vector3(0,0,330);
 
 	//队伍数据数组,会保存每个队伍的模型和信息(如血量)
 	var teamsData = [];
+
 
 	init();
 	animate();
@@ -84,6 +85,7 @@
 													quaternion.setFromUnitVectors(missileVec , tangent);                    //根据切向向量和导弹初始方向向量计算四元数
 													rotation.setFromQuaternion(quaternion,'XYZ');							//将四元数转换成欧拉角
 													missile.rotation.set(rotation.x,rotation.y,rotation.z);
+													// particle(trajectory.pos*10);
 
 												})
 												.onComplete(function(){
@@ -108,6 +110,7 @@
 												.start();
 
 	}
+
 
 
 	/*
@@ -173,10 +176,7 @@
 		stats.domElement.style.top = '0px';
 		container.appendChild( stats.domElement );
 
-
 		var loader = new THREE.ColladaLoader();
-
-		var objLoader = new THREE.OBJLoader();
 
 		var onProgress = function ( xhr ) {
 			if ( xhr.lengthComputable ) {
@@ -194,32 +194,14 @@
 		teamMaterial = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
 		teamMesh = new THREE.Mesh( teamGeo, teamMaterial );
 
-		var sphereGeo = new THREE.SphereGeometry(300, 8, 8,Math.PI,Math.PI);
-
 		var baseGeo = new THREE.CylinderGeometry(80, 120, 120, 5, 3);
 		var baseMaterial = new THREE.MeshPhongMaterial( { color: 0xe0e0e0 } );
-
 		var baseMesh = new THREE.Mesh( baseGeo, baseMaterial );
 		baseMesh.rotation.x = -RAD_90;
 		baseMesh.position.z = -60;
-		// scene.add(sphereMesh);
-		// scene.add(baseMesh);
-		// var flagGeo = new THREE.BoxGeometry( 3, 3, 500 );
-		// var flagMaterial = new THREE.MeshBasicMaterial( { color: 0x000000 } );
-		
-		var flagPoleGeo = new THREE.BoxGeometry( 3, 3, 200 );
-		var flagPoleMaterial = new THREE.MeshPhongMaterial( { color: 0xffffff, specular: 0x111111, shininess: 100 } );
-		var flagPoleMesh = new THREE.Mesh( flagPoleGeo, flagPoleMaterial );
 
-		// scene.add(flagPoleMesh);
 
-		var flagLogoGeo = new THREE.BoxGeometry( 130, 0.1, 80 );
-		var flagLogoMaterial = new THREE.MeshPhongMaterial( { color: 0xffffff, specular: 0x111111, shininess: 100 } );
-		var flagLogoMesh = new THREE.Mesh( flagLogoGeo, flagLogoMaterial );
-		flagLogoMesh.position.set(65,0,50);
 
-		teamFlag.add(flagPoleMesh,flagLogoMesh);
-		// scene.add(teamFlag);
 
 
 		// var r = "img/skybox1/";
@@ -232,31 +214,8 @@
 		var urls = [ r + "px.jpg", r + "nx.jpg",
 					 r + "nz.jpg", r + "pz.jpg",
 					 r + "py.jpg", r + "ny.jpg" ];
+		scene.add( makeSkybox( urls, 50000 ) );
 
-
-		var skybox = makeSkybox( urls, 50000 );
-		// console.log(skybox.rotation);
-		skybox.rotation.z += RAD_90;
-
-		scene.add( skybox );
-
-		//var flagTexture 	= 	THREE.ImageUtils.loadTexture('img/flag.png');				//旗帜图案
-
-
-		// objLoader.load('./models/flag.obj',function(object){								//加载旗帜模型
-		// 	object.traverse( function ( child ) {
-		// 		if ( child instanceof THREE.Mesh ) {
-		// 			child.material.map = flagTexture;
-		// 		}
-		// 	});
-		// 	object.scale.set(0.1,0.1,0.1);
-		// 	for(var i =0 ;i<16;i++){
-		// 		var flag = object.clone();
-		// 		flag.position.x +=i*100;
-		// 		scene.add(flag);
-		// 	}
-			
-		// }, onProgress, onError);
 
 
 		/*
@@ -274,7 +233,6 @@
 
 			teamLauncherMesh.position.copy(position);
 			teamBaseMesh.position.copy(position).add(baseOffset);
-			flag.position.copy(position).add(flagOffset);
 
 			var orbit = new THREE.EllipseCurve(
 				position.x,  position.y,            
@@ -283,11 +241,6 @@
 				false,            
 				0                
 			);
-			var path = new THREE.Path( orbit.getPoints( 50 ) );
-			var geometry = path.createPointsGeometry( 50 );
-			var material = new THREE.LineBasicMaterial( { color : 0xff0000 } );
-			var ellipse = new THREE.Line( geometry, material );
-			// scene.add( ellipse );
 
 			teamLauncherMesh.rotation.z = Math.random()*RAD_90*4;
 			scene.add(teamLauncherMesh);
@@ -301,13 +254,21 @@
 				service.position.y = orbit.getPointAt(pos).y;
 				service.position.add(serviceOffset);
 				service.rotation.y = -i*2*Math.PI/5+RAD_90;
-				// service.position.copy(orbit.getPointAt(pos));
-				// console.log(orbit.getPointAt(pos));
-				new TWEEN.Tween(service.position).to({z: 10},1000).delay(Math.random()*500).repeat( Infinity ).yoyo(true).start();
+				// new TWEEN.Tween(service.position).to({z: 10},1000).delay(Math.random()*500).repeat( Infinity ).yoyo(true).start();
 				servicesArr.push(service);
 				scene.add(service);
 				pos+=0.2;
 			}
+
+
+			var logoTexture =	THREE.ImageUtils.loadTexture('img/flag.png');			
+			var logoGeo =new THREE.BoxGeometry(300,0.1,200);
+			var logoMat = new THREE.MeshBasicMaterial( {map : logoTexture} );
+			logoMat.transparent=true;
+			logoMat.opacity= 0.2;
+			var logo = new THREE.Mesh( logoGeo, logoMat );
+			logo.position.copy(position).add(logoOffset);
+			scene.add(logo);
 
 			return obj = {
 				launcher:teamLauncherMesh,                     		//导弹发射架
@@ -334,7 +295,7 @@
 			// launcher.position.set(0,0,0);
 			p1.scale.set(30,30,30);
 			p1.rotation.x = 0;
-			console.log(p1.rotation);
+
 			// scene.add(p1);
 
 			//加载导弹发射架的第二个部分
@@ -367,15 +328,15 @@
 					serviceMesh.position.add(serviceOffset);
 
 
-					new TWEEN.Tween(serviceMesh.position).to({z: 10},300).repeat( Infinity ).yoyo(true).start();
+					// new TWEEN.Tween(serviceMesh.position).to({z: 10},300).repeat( Infinity ).yoyo(true).start();
 
 					var sphereGeo =new THREE.SphereGeometry(80,30);
 					var sphereMat = new THREE.MeshBasicMaterial( { color : 0xff0000 } );
-					sphereMat.transparent=true;
-					sphereMat.opacity=0.6;
+					// sphereMat.transparent=true;
+					// sphereMat.opacity=0.6;
 					var sphere = new THREE.Mesh( sphereGeo, sphereMat );
 
-					// new TWEEN.Tween(sphere.material).to({opacity: 0.3},300).repeat( Infinity ).yoyo(true).start();
+					// new TWEEN.Tween(sphere.material).to({opacity: 0.3},300).repeat( 10 ).yoyo(true).onComplete(function(){scene.remove(sphere);}).start();
 
 					console.log(sphere);
 					// scene.add(sphere);
@@ -471,6 +432,7 @@
 	function animate() {
 
 		requestAnimationFrame( animate );
+
 		render();
 
 	}
