@@ -1,474 +1,487 @@
-var container;
-var camera, scene, renderer;
-var RAD_90  = 90/180*Math.PI;            					//90度的弧度值，后面会多次用到 定义为变量减少运算
-
-var teamMesh, teamMaterial;
-
-var missileDae;
-
-var missileLauncher = new THREE.Group();					//发射架组，发射架的模型有两个部分，会先添加进Group中再进行操作
-var teamFlag = new THREE.Group();                           //旗帜组  暂时没用到
-var baseMesh;                 								//发射架底部棱台
-var serviceMesh;                                            //周围的服务
-
-//初始方向向量   用于计算角度
-var missileVec 	= new THREE.Vector3(1,0,0);
-var launcherVec = new THREE.Vector3(0,-1,0);
-
-//偏移量   模型加载进来时的位置可能并不是在坐标原点，需要通过偏移量调整
-var flagOffset = new THREE.Vector3(0,-60,180);
-var baseOffset = new THREE.Vector3(0,0,-60);
-var serviceOffset =  new THREE.Vector3(0,0,0);
-
-//队伍数据数组,会保存每个队伍的模型和信息(如血量)
-var teamsData = [];
-
-init();
-animate();
 
 
-/*
- * 攻击函数
- * @param startTeam 	攻击方
- * @param endTeam 		防守方
- * @param serviceNum    被攻击的服务编号
- * @param time          导弹飞行时间
- */
-function attack( startTeam , endTeam , serviceNum, time ){
+	var container;
+	var camera, scene, renderer;
+	var RAD_90  = 90/180*Math.PI;            					//90度的弧度值，后面会多次用到 定义为变量减少运算
 
-	var missile = missileDae.clone();
-	var quaternion = new THREE.Quaternion();
-	var rotation = new THREE.Euler();
+	var teamMesh, teamMaterial;
 
-	var startPos 	= 	startTeam.launcher.position;
-	var endPos 		= 	endTeam.services[serviceNum].position;
-	var dx = endPos.x - startPos.x;
-	var dy = endPos.y - startPos.y;
-	var d = Math.sqrt(dx*dx+dy*dy);
+	var missileDae;
 
-	var targetVec = new THREE.Vector3(dx,dy,0);							//指向目标的方向向量
+	var missileLauncher = new THREE.Group();					//发射架组，发射架的模型有两个部分，会先添加进Group中再进行操作
+	var teamFlag = new THREE.Group();                           //旗帜组  暂时没用到
+	var baseMesh;                 								//发射架底部棱台
+	var serviceMesh;                                            //周围的服务
 
-	//轨迹  curve是轨迹的曲线   pos会用于后面tween中的计算
-	var trajectory = {
-		curve :	 new THREE.SplineCurve3([
-						    new THREE.Vector3(startPos.x, startPos.y, 150),
-						    new THREE.Vector3(startPos.x + dx/3, startPos.y + dy/3, d/4), 
-						    new THREE.Vector3(endPos.x - dx/3, endPos.y - dy/3, d/4),
-						    new THREE.Vector3(endPos.x, endPos.y, 50)
-						]),
-		pos : 0
-	}
+	//初始方向向量   用于计算角度
+	var missileVec 	= new THREE.Vector3(1,0,0);
+	var launcherVec = new THREE.Vector3(0,-1,0);
 
-	var geometry = new THREE.Geometry();
-	geometry.vertices = trajectory.curve.getPoints(50);
-	var material = new THREE.LineBasicMaterial({color : 0xee00ee});
-	var line = new THREE.Line(geometry, material);
+	//偏移量   模型加载进来时的位置可能并不是在坐标原点，需要通过偏移量调整
+	var flagOffset = new THREE.Vector3(0,-60,180);
+	var baseOffset = new THREE.Vector3(0,0,-60);
+	var serviceOffset =  new THREE.Vector3(0,0,0);
 
-	scene.add( line );
+	//队伍数据数组,会保存每个队伍的模型和信息(如血量)
+	var teamsData = [];
 
-
-	var tangent; 
-
-	//发射导弹
-	var launch = new TWEEN.Tween( trajectory )
-											.to({pos:1},time)
-											.onStart(function(){
-												scene.add(missile);
-												startTeam.launcher.children[1].visible = false;         
-											})
-											.onUpdate(function(){
-												missile.position.copy(trajectory.curve.getPointAt(trajectory.pos));  	//获取位置
-												tangent = trajectory.curve.getTangentAt(trajectory.pos).normalize();    //获取导弹轨迹曲线的切向方向向量
-												quaternion.setFromUnitVectors(missileVec , tangent);                    //根据切向向量和导弹初始方向向量计算四元数
-												rotation.setFromQuaternion(quaternion,'XYZ');							//将四元数转换成欧拉角
-												missile.rotation.set(rotation.x,rotation.y,rotation.z);
-
-											})
-											.onComplete(function(){
-												scene.remove(missile);
-												missile = null;
-												scene.remove(line);
-												line = null;
-												startTeam.launcher.children[1].visible = true;
-											});
-	var rot = launcherVec.angleTo(targetVec);
-
-	// rot = dy > 0 ? -rot : dy==0 ? dx<0 ? -rot : rot : rot;	
-	rot = dx > 0 ?rot :-rot;	//修正旋转角度
-
-
-	//旋转发射架 对准目标
-	var aim = new TWEEN.Tween( startTeam.launcher.rotation )
-											.to({z:rot},500)
-											.onComplete(function(){
-												launch.start();				//旋转完成后发射
-											})
-											.start();
-
-}
-
-
-/*
- * 进攻测试   随机选取进攻队伍和防守队伍
- */
-function attactTest(){
-	var startIndex = Math.ceil(Math.random()*15);
-	var endIndex;
-	do{
-		endIndex = Math.ceil(Math.random()*15);
-	}while(endIndex == startIndex);
-	var serviceNum = Math.ceil(Math.random()*4);
-	attack(teamsData[startIndex],teamsData[endIndex],serviceNum,1800);		
-	var time = Math.ceil(Math.random()*3000);
-	setTimeout(attactTest,time);		//间隔一段时间后再次调用此函数
-}
-
-/*
- * 生成天空盒
- * @param urls 	   数组,天空盒六个方向的图片路径
- * @param size 	   天空盒大小
- * @return  	   天空盒
- */
-function makeSkybox( urls, size ) {
-	var skyboxCubemap = new THREE.CubeTextureLoader().load( urls );
-	skyboxCubemap.format = THREE.RGBFormat;
-	var skyboxShader = THREE.ShaderLib['cube'];
-	skyboxShader.uniforms['tCube'].value = skyboxCubemap;
-	return new THREE.Mesh(
-		new THREE.BoxGeometry( size, size, size ),
-		new THREE.ShaderMaterial({
-			fragmentShader : skyboxShader.fragmentShader, vertexShader : skyboxShader.vertexShader,
-			uniforms : skyboxShader.uniforms, depthWrite : false, side : THREE.BackSide
-		})
-	);
-}
-
-
-function init() {
-
-	container = document.createElement( 'div' );
-	document.body.appendChild( container );
-
-	camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 100000 );
-	camera.position.set( 0, -2800, 2000 );
-	camera.rotation.x = RAD_90;
-	camera.lookAt( new THREE.Vector3() );
-
-	scene = new THREE.Scene();
-
-	controls = new THREE.TrackballControls( camera , container );
-	controls.rotateSpeed = 1.0;
-	controls.zoomSpeed = 1.2;
-	controls.panSpeed = 0.8;
-	controls.noZoom = false;
-	controls.noPan = false;
-	controls.staticMoving = true;
-	controls.dynamicDampingFactor = 0.3;
-
-	stats = new Stats();
-	stats.domElement.id = 'fps';
-	stats.domElement.style.position = 'absolute';
-	stats.domElement.style.top = '0px';
-	stats.domElement.style.left = '1000px';
-	// container.appendChild( stats.domElement );
-
-
-	var loader = new THREE.ColladaLoader();
-
-	var objLoader = new THREE.OBJLoader();
-
-	var onProgress = function ( xhr ) {
-		if ( xhr.lengthComputable ) {
-				var percentComplete = xhr.loaded / xhr.total * 100;
-				console.log( Math.round(percentComplete, 2) + '% downloaded' );
-		}
-	};
-
-	var onError = function ( xhr ) {
-	};
-
-	// roll-over helpers
-
-	teamGeo = new THREE.BoxGeometry( 50, 50, 50 );
-	teamMaterial = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
-	teamMesh = new THREE.Mesh( teamGeo, teamMaterial );
-
-	var sphereGeo = new THREE.SphereGeometry(300, 8, 8,Math.PI,Math.PI);
-
-	var baseGeo = new THREE.CylinderGeometry(80, 120, 120, 5, 3);
-	var baseMaterial = new THREE.MeshPhongMaterial( { color: 0xe0e0e0 } );
-
-	var baseMesh = new THREE.Mesh( baseGeo, baseMaterial );
-	baseMesh.rotation.x = -RAD_90;
-	baseMesh.position.z = -60;
-	// scene.add(sphereMesh);
-	// scene.add(baseMesh);
-	// var flagGeo = new THREE.BoxGeometry( 3, 3, 500 );
-	// var flagMaterial = new THREE.MeshBasicMaterial( { color: 0x000000 } );
-	
-	var flagPoleGeo = new THREE.BoxGeometry( 3, 3, 200 );
-	var flagPoleMaterial = new THREE.MeshPhongMaterial( { color: 0xffffff, specular: 0x111111, shininess: 100 } );
-	var flagPoleMesh = new THREE.Mesh( flagPoleGeo, flagPoleMaterial );
-
-	// scene.add(flagPoleMesh);
-
-	var flagLogoGeo = new THREE.BoxGeometry( 130, 0.1, 80 );
-	var flagLogoMaterial = new THREE.MeshPhongMaterial( { color: 0xffffff, specular: 0x111111, shininess: 100 } );
-	var flagLogoMesh = new THREE.Mesh( flagLogoGeo, flagLogoMaterial );
-	flagLogoMesh.position.set(65,0,50);
-
-	teamFlag.add(flagPoleMesh,flagLogoMesh);
-	// scene.add(teamFlag);
-
-
-	var r = "img/skybox/";
-	var urls = [ r + "px.jpg", r + "nx.jpg",
-				 r + "py.jpg", r + "ny.jpg",
-				 r + "pz.jpg", r + "nz.jpg" ];
-	scene.add( makeSkybox( urls, 10000 ));
-
-	//var flagTexture 	= 	THREE.ImageUtils.loadTexture('img/flag.png');				//旗帜图案
-
-
-	// objLoader.load('./models/flag.obj',function(object){								//加载旗帜模型
-	// 	object.traverse( function ( child ) {
-	// 		if ( child instanceof THREE.Mesh ) {
-	// 			child.material.map = flagTexture;
-	// 		}
-	// 	});
-	// 	object.scale.set(0.1,0.1,0.1);
-	// 	for(var i =0 ;i<16;i++){
-	// 		var flag = object.clone();
-	// 		flag.position.x +=i*100;
-	// 		scene.add(flag);
-	// 	}
-		
-	// }, onProgress, onError);
+	init();
+	animate();
 
 
 	/*
-	 * 构造队伍的模型，包括导弹发射架及五个服务的模型
-	 * @param  position    位置
-	 * @return obj 	       包含队伍所有模型及信息的对象
+	 * 攻击函数
+	 * @param startTeam 	攻击方
+	 * @param endTeam 		防守方
+	 * @param serviceNum    被攻击的服务编号
+	 * @param time          导弹飞行时间
 	 */
-	function constructTeamObject(position){
+	function attack( startTeam , endTeam , serviceNum, time ){
 
-		var obj;
+		var missile = missileDae.clone();
+		var quaternion = new THREE.Quaternion();
+		var rotation = new THREE.Euler();
 
-		var teamLauncherMesh 	= 	missileLauncher.clone();
-		var teamBaseMesh 		= 	baseMesh.clone();
-		var flag 				= 	teamFlag.clone();
+		var startPos 	= 	startTeam.launcher.position;
+		var endPos 		= 	endTeam.services[serviceNum].position;
+		var dx = endPos.x - startPos.x;
+		var dy = endPos.y - startPos.y;
+		var d = Math.sqrt(dx*dx+dy*dy);
 
-		teamLauncherMesh.position.copy(position);
-		teamBaseMesh.position.copy(position).add(baseOffset);
-		flag.position.copy(position).add(flagOffset);
+		var targetVec = new THREE.Vector3(dx,dy,0);							//指向目标的方向向量
 
-		var orbit = new THREE.EllipseCurve(
-			position.x,  position.y,            
-			200, 200,          
-			0,  2*Math.PI,  
-			false,            
-			0                
-		);
-		var path = new THREE.Path( orbit.getPoints( 50 ) );
-		var geometry = path.createPointsGeometry( 50 );
-		var material = new THREE.LineBasicMaterial( { color : 0xff0000 } );
-		var ellipse = new THREE.Line( geometry, material );
-		// scene.add( ellipse );
-
-		teamLauncherMesh.rotation.z = Math.random()*RAD_90*4;
-		scene.add(teamLauncherMesh);
-		scene.add(teamBaseMesh);
-		// scene.add(flag);
-		var pos=0;
-		var servicesArr = [];
-		for(var i=0;i<5;i++){
-			var service = serviceMesh.clone();
-			service.position.x = orbit.getPointAt(pos).x;
-			service.position.y = orbit.getPointAt(pos).y;
-			service.position.add(serviceOffset);
-			service.rotation.y = -i*2*Math.PI/5+RAD_90;
-			// service.position.copy(orbit.getPointAt(pos));
-			// console.log(orbit.getPointAt(pos));
-			new TWEEN.Tween(service.position).to({z: 10},1000).delay(Math.random()*500).repeat( Infinity ).yoyo(true).start();
-			servicesArr.push(service);
-			scene.add(service);
-			pos+=0.2;
+		//轨迹  curve是轨迹的曲线   pos会用于后面tween中的计算
+		var trajectory = {
+			curve :	 new THREE.SplineCurve3([
+							    new THREE.Vector3(startPos.x, startPos.y, 150),
+							    new THREE.Vector3(startPos.x + dx/3, startPos.y + dy/3, d/4), 
+							    new THREE.Vector3(endPos.x - dx/3, endPos.y - dy/3, d/4),
+							    new THREE.Vector3(endPos.x, endPos.y, 50)
+							]),
+			pos : 0
 		}
 
-		return obj = {
-			launcher:teamLauncherMesh,                     		//导弹发射架
-			services:servicesArr,                             	//服务
-			base:teamBaseMesh,                                	//发射架下方的棱台
-			logo:null,                          				//队伍LOGO 将来用于保存图片文件路径或名字
-			HP:100,                                             //总血量
-			currentHP:100,                     					//当前血量
-			position:teamLauncherMesh.position                	//位置
-		}
+		var geometry = new THREE.Geometry();
+		geometry.vertices = trajectory.curve.getPoints(50);
+		var material = new THREE.LineBasicMaterial({color : 0xee00ee});
+		var line = new THREE.Line(geometry, material);
+
+		scene.add( line );
+
+
+		var tangent; 
+
+		//发射导弹
+		var launch = new TWEEN.Tween( trajectory )
+												.to({pos:1},time)
+												.onStart(function(){
+													scene.add(missile);
+													startTeam.launcher.children[1].visible = false;         
+												})
+												.onUpdate(function(){
+													missile.position.copy(trajectory.curve.getPointAt(trajectory.pos));  	//获取位置
+													tangent = trajectory.curve.getTangentAt(trajectory.pos).normalize();    //获取导弹轨迹曲线的切向方向向量
+													quaternion.setFromUnitVectors(missileVec , tangent);                    //根据切向向量和导弹初始方向向量计算四元数
+													rotation.setFromQuaternion(quaternion,'XYZ');							//将四元数转换成欧拉角
+													missile.rotation.set(rotation.x,rotation.y,rotation.z);
+
+												})
+												.onComplete(function(){
+													scene.remove(missile);
+													missile = null;
+													scene.remove(line);
+													line = null;
+													startTeam.launcher.children[1].visible = true;
+												});
+		var rot = launcherVec.angleTo(targetVec);
+
+		// rot = dy > 0 ? -rot : dy==0 ? dx<0 ? -rot : rot : rot;	
+		rot = dx > 0 ?rot :-rot;	//修正旋转角度
+
+
+		//旋转发射架 对准目标
+		var aim = new TWEEN.Tween( startTeam.launcher.rotation )
+												.to({z:rot},500)
+												.onComplete(function(){
+													launch.start();				//旋转完成后发射
+												})
+												.start();
 
 	}
 
 
-	//加载导弹发射架的第一个部分
-	loader.load( './models/MissileLauncherP1.dae', function ( collada ) {
-		var p1 = collada.scene;
-		p1.traverse( function ( child ) {
-			if ( child instanceof THREE.SkinnedMesh ) {
-					var animation = new THREE.Animation( child, child.geometry.animation );
-					animation.play();
-				}
-		});
-		// launcher.position.set(0,0,0);
-		p1.scale.set(30,30,30);
-		p1.rotation.x = 0;
-		console.log(p1.rotation);
-		// scene.add(p1);
+	/*
+	 * 进攻测试   随机选取进攻队伍和防守队伍
+	 */
+	function attactTest(){
+		var startIndex = Math.ceil(Math.random()*15);
+		var endIndex;
+		do{
+			endIndex = Math.ceil(Math.random()*15);
+		}while(endIndex == startIndex);
+		var serviceNum = Math.ceil(Math.random()*4);
+		attack(teamsData[startIndex],teamsData[endIndex],serviceNum,1800);		
+		var time = Math.ceil(Math.random()*3000);
+		setTimeout(attactTest,time);		//间隔一段时间后再次调用此函数
+	}
 
-		//加载导弹发射架的第二个部分
-		loader.load( './models/MissileLauncherP2.dae', function ( collada ) {
-			var p2 = collada.scene;
-			p2.traverse( function ( child ) {
+	/*
+	 * 生成天空盒
+	 * @param urls 	   数组,天空盒六个方向的图片路径
+	 * @param size 	   天空盒大小
+	 * @return  	   天空盒
+	 */
+	function makeSkybox( urls, size ) {
+		var skyboxCubemap = new THREE.CubeTextureLoader().load( urls );
+		skyboxCubemap.format = THREE.RGBFormat;
+		var skyboxShader = THREE.ShaderLib['cube'];
+		skyboxShader.uniforms['tCube'].value = skyboxCubemap;
+		return new THREE.Mesh(
+			new THREE.BoxGeometry( size, size, size ),
+			new THREE.ShaderMaterial({
+				fragmentShader : skyboxShader.fragmentShader, vertexShader : skyboxShader.vertexShader,
+				uniforms : skyboxShader.uniforms, depthWrite : false, side : THREE.BackSide
+			})
+		);
+	}
+
+
+	function init() {
+
+		container = document.createElement( 'div' );
+		document.body.appendChild( container );
+
+		camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 100000 );
+		camera.position.set( 0, -2800, 2000 );
+		camera.rotation.x = RAD_90;
+		camera.lookAt( new THREE.Vector3() );
+
+		scene = new THREE.Scene();
+
+		controls = new THREE.TrackballControls( camera , container );
+		controls.rotateSpeed = 1.0;
+		controls.zoomSpeed = 1.2;
+		controls.panSpeed = 0.8;
+		controls.noZoom = false;
+		controls.noPan = false;
+		controls.staticMoving = true;
+		controls.dynamicDampingFactor = 0.3;
+
+		stats = new Stats();
+		stats.domElement.id = 'fps';
+		stats.domElement.style.position = 'absolute';
+		stats.domElement.style.top = '0px';
+		container.appendChild( stats.domElement );
+
+
+		var loader = new THREE.ColladaLoader();
+
+		var objLoader = new THREE.OBJLoader();
+
+		var onProgress = function ( xhr ) {
+			if ( xhr.lengthComputable ) {
+					var percentComplete = xhr.loaded / xhr.total * 100;
+					console.log( Math.round(percentComplete, 2) + '% downloaded' );
+			}
+		};
+
+		var onError = function ( xhr ) {
+		};
+
+		// roll-over helpers
+
+		teamGeo = new THREE.BoxGeometry( 50, 50, 50 );
+		teamMaterial = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
+		teamMesh = new THREE.Mesh( teamGeo, teamMaterial );
+
+		var sphereGeo = new THREE.SphereGeometry(300, 8, 8,Math.PI,Math.PI);
+
+		var baseGeo = new THREE.CylinderGeometry(80, 120, 120, 5, 3);
+		var baseMaterial = new THREE.MeshPhongMaterial( { color: 0xe0e0e0 } );
+
+		var baseMesh = new THREE.Mesh( baseGeo, baseMaterial );
+		baseMesh.rotation.x = -RAD_90;
+		baseMesh.position.z = -60;
+		// scene.add(sphereMesh);
+		// scene.add(baseMesh);
+		// var flagGeo = new THREE.BoxGeometry( 3, 3, 500 );
+		// var flagMaterial = new THREE.MeshBasicMaterial( { color: 0x000000 } );
+		
+		var flagPoleGeo = new THREE.BoxGeometry( 3, 3, 200 );
+		var flagPoleMaterial = new THREE.MeshPhongMaterial( { color: 0xffffff, specular: 0x111111, shininess: 100 } );
+		var flagPoleMesh = new THREE.Mesh( flagPoleGeo, flagPoleMaterial );
+
+		// scene.add(flagPoleMesh);
+
+		var flagLogoGeo = new THREE.BoxGeometry( 130, 0.1, 80 );
+		var flagLogoMaterial = new THREE.MeshPhongMaterial( { color: 0xffffff, specular: 0x111111, shininess: 100 } );
+		var flagLogoMesh = new THREE.Mesh( flagLogoGeo, flagLogoMaterial );
+		flagLogoMesh.position.set(65,0,50);
+
+		teamFlag.add(flagPoleMesh,flagLogoMesh);
+		// scene.add(teamFlag);
+
+
+		// var r = "img/skybox1/";
+		// var urls = [ r + "px.jpg", r + "nx.jpg",
+		// 			 r + "py.jpg", r + "ny.jpg",
+		// 			 r + "pz.jpg", r + "nz.jpg" ];
+
+
+		var r = "img/skybox/";
+		var urls = [ r + "px.jpg", r + "nx.jpg",
+					 r + "nz.jpg", r + "pz.jpg",
+					 r + "py.jpg", r + "ny.jpg" ];
+
+
+		var skybox = makeSkybox( urls, 50000 );
+		// console.log(skybox.rotation);
+		skybox.rotation.z += RAD_90;
+
+		scene.add( skybox );
+
+		//var flagTexture 	= 	THREE.ImageUtils.loadTexture('img/flag.png');				//旗帜图案
+
+
+		// objLoader.load('./models/flag.obj',function(object){								//加载旗帜模型
+		// 	object.traverse( function ( child ) {
+		// 		if ( child instanceof THREE.Mesh ) {
+		// 			child.material.map = flagTexture;
+		// 		}
+		// 	});
+		// 	object.scale.set(0.1,0.1,0.1);
+		// 	for(var i =0 ;i<16;i++){
+		// 		var flag = object.clone();
+		// 		flag.position.x +=i*100;
+		// 		scene.add(flag);
+		// 	}
+			
+		// }, onProgress, onError);
+
+
+		/*
+		 * 构造队伍的模型，包括导弹发射架及五个服务的模型
+		 * @param  position    位置
+		 * @return obj 	       包含队伍所有模型及信息的对象
+		 */
+		function constructTeamObject(position){
+
+			var obj;
+
+			var teamLauncherMesh 	= 	missileLauncher.clone();
+			var teamBaseMesh 		= 	baseMesh.clone();
+			var flag 				= 	teamFlag.clone();
+
+			teamLauncherMesh.position.copy(position);
+			teamBaseMesh.position.copy(position).add(baseOffset);
+			flag.position.copy(position).add(flagOffset);
+
+			var orbit = new THREE.EllipseCurve(
+				position.x,  position.y,            
+				200, 200,          
+				0,  2*Math.PI,  
+				false,            
+				0                
+			);
+			var path = new THREE.Path( orbit.getPoints( 50 ) );
+			var geometry = path.createPointsGeometry( 50 );
+			var material = new THREE.LineBasicMaterial( { color : 0xff0000 } );
+			var ellipse = new THREE.Line( geometry, material );
+			// scene.add( ellipse );
+
+			teamLauncherMesh.rotation.z = Math.random()*RAD_90*4;
+			scene.add(teamLauncherMesh);
+			scene.add(teamBaseMesh);
+			// scene.add(flag);
+			var pos=0;
+			var servicesArr = [];
+			for(var i=0;i<5;i++){
+				var service = serviceMesh.clone();
+				service.position.x = orbit.getPointAt(pos).x;
+				service.position.y = orbit.getPointAt(pos).y;
+				service.position.add(serviceOffset);
+				service.rotation.y = -i*2*Math.PI/5+RAD_90;
+				// service.position.copy(orbit.getPointAt(pos));
+				// console.log(orbit.getPointAt(pos));
+				new TWEEN.Tween(service.position).to({z: 10},1000).delay(Math.random()*500).repeat( Infinity ).yoyo(true).start();
+				servicesArr.push(service);
+				scene.add(service);
+				pos+=0.2;
+			}
+
+			return obj = {
+				launcher:teamLauncherMesh,                     		//导弹发射架
+				services:servicesArr,                             	//服务
+				base:teamBaseMesh,                                	//发射架下方的棱台
+				logo:null,                          				//队伍LOGO 将来用于保存图片文件路径或名字
+				HP:100,                                             //总血量
+				currentHP:100,                     					//当前血量
+				position:teamLauncherMesh.position                	//位置
+			}
+
+		}
+
+
+		//加载导弹发射架的第一个部分
+		loader.load( './models/MissileLauncherP1.dae', function ( collada ) {
+			var p1 = collada.scene;
+			p1.traverse( function ( child ) {
 				if ( child instanceof THREE.SkinnedMesh ) {
 						var animation = new THREE.Animation( child, child.geometry.animation );
 						animation.play();
 					}
 			});
-			p2.scale.set(30,30,30);
-			p2.rotation.x = 0;
+			// launcher.position.set(0,0,0);
+			p1.scale.set(30,30,30);
+			p1.rotation.x = 0;
+			console.log(p1.rotation);
+			// scene.add(p1);
 
-			missileLauncher.add(p1);
-			missileLauncher.add(p2);
-			// missileLauncher.add(baseMesh);
-			// scene.add(missileLauncher);
-
-			//加载服务的模型
-			loader.load( './models/glados.dae', function ( collada ) {
-				serviceMesh = collada.scene;
-				serviceMesh.traverse( function ( child ) {
+			//加载导弹发射架的第二个部分
+			loader.load( './models/MissileLauncherP2.dae', function ( collada ) {
+				var p2 = collada.scene;
+				p2.traverse( function ( child ) {
 					if ( child instanceof THREE.SkinnedMesh ) {
-						var animation = new THREE.Animation( child, child.geometry.animation );
-						animation.play();
-					}
+							var animation = new THREE.Animation( child, child.geometry.animation );
+							animation.play();
+						}
 				});
-				serviceMesh.scale.set(1,1,1);
-				serviceMesh.position.add(serviceOffset);
+				p2.scale.set(30,30,30);
+				p2.rotation.x = 0;
+
+				missileLauncher.add(p1);
+				missileLauncher.add(p2);
+				// missileLauncher.add(baseMesh);
+				// scene.add(missileLauncher);
+
+				//加载服务的模型
+				loader.load( './models/glados.dae', function ( collada ) {
+					serviceMesh = collada.scene;
+					serviceMesh.traverse( function ( child ) {
+						if ( child instanceof THREE.SkinnedMesh ) {
+							var animation = new THREE.Animation( child, child.geometry.animation );
+							animation.play();
+						}
+					});
+					serviceMesh.scale.set(1,1,1);
+					serviceMesh.position.add(serviceOffset);
 
 
-				new TWEEN.Tween(serviceMesh.position).to({z: 10},300).repeat( Infinity ).yoyo(true).start();
+					new TWEEN.Tween(serviceMesh.position).to({z: 10},300).repeat( Infinity ).yoyo(true).start();
 
-				var sphereGeo =new THREE.SphereGeometry(80,30);
-				var sphereMat = new THREE.MeshBasicMaterial( { color : 0xff0000 } );
-				sphereMat.transparent=true;
-				sphereMat.opacity=0.6;
-				var sphere = new THREE.Mesh( sphereGeo, sphereMat );
+					var sphereGeo =new THREE.SphereGeometry(80,30);
+					var sphereMat = new THREE.MeshBasicMaterial( { color : 0xff0000 } );
+					sphereMat.transparent=true;
+					sphereMat.opacity=0.6;
+					var sphere = new THREE.Mesh( sphereGeo, sphereMat );
 
-				// new TWEEN.Tween(sphere.material).to({opacity: 0.3},300).repeat( Infinity ).yoyo(true).start();
+					// new TWEEN.Tween(sphere.material).to({opacity: 0.3},300).repeat( Infinity ).yoyo(true).start();
 
-				console.log(sphere);
-				// scene.add(sphere);
-
-
+					console.log(sphere);
+					// scene.add(sphere);
 
 
-				for(var i=0;i<16;i++){
 
-					var position = new THREE.Vector3(-1350+(i%4)*900,-1350+Math.floor(i/4)*900,0);
-					teamsData[i] = constructTeamObject(position);
 
-				}
+					for(var i=0;i<16;i++){
 
-				attactTest();
+						var position = new THREE.Vector3(-1350+(i%4)*900,-1350+Math.floor(i/4)*900,0);
+						teamsData[i] = constructTeamObject(position);
+
+					}
+
+					attactTest();
+
+				}, onProgress, onError);
 
 			}, onProgress, onError);
 
 		}, onProgress, onError);
+		
+		//加载导弹  模型和发射架的第二个部分其实是一样的，但是角度不同。为了方便还是重新加载另外一个
+		loader.load( './models/missile.dae', function ( collada ) {
+			missileDae = collada.scene;
+			missileDae.traverse( function ( child ) {
+				if ( child instanceof THREE.SkinnedMesh ) {
+						var animation = new THREE.Animation( child, child.geometry.animation );
+						animation.play();
+					}
+			});
+			missileDae.scale.set(30,30,30);
+			missileDae.rotation.x = 0;
 
-	}, onProgress, onError);
-	
-	//加载导弹  模型和发射架的第二个部分其实是一样的，但是角度不同。为了方便还是重新加载另外一个
-	loader.load( './models/missile.dae', function ( collada ) {
-		missileDae = collada.scene;
-		missileDae.traverse( function ( child ) {
-			if ( child instanceof THREE.SkinnedMesh ) {
-					var animation = new THREE.Animation( child, child.geometry.animation );
-					animation.play();
-				}
-		});
-		missileDae.scale.set(30,30,30);
-		missileDae.rotation.x = 0;
-
-	}, onProgress, onError);
+		}, onProgress, onError);
 
 
-	// grid
+		// grid
 
-	var size = 100, step = 50;
+		var size = 100, step = 50;
 
-	var geometry = new THREE.Geometry();
+		var geometry = new THREE.Geometry();
 
-	for ( var i = - size; i <= size; i += step ) {
+		for ( var i = - size; i <= size; i += step ) {
 
-		geometry.vertices.push( new THREE.Vector3( - size, i, 0 ) );
-		geometry.vertices.push( new THREE.Vector3(   size, i, 0 ) );
+			geometry.vertices.push( new THREE.Vector3( - size, i, 0 ) );
+			geometry.vertices.push( new THREE.Vector3(   size, i, 0 ) );
 
-		geometry.vertices.push( new THREE.Vector3( i, - size, 0 ) );
-		geometry.vertices.push( new THREE.Vector3( i,   size, 0 ) );
+			geometry.vertices.push( new THREE.Vector3( i, - size, 0 ) );
+			geometry.vertices.push( new THREE.Vector3( i,   size, 0 ) );
+
+		}
+
+		var material = new THREE.LineBasicMaterial( { color: 0x000000, opacity: 0.2, transparent: true } );
+
+		var line = new THREE.LineSegments( geometry, material );
+		// scene.add( line );
+
+		//
+
+
+
+		// Lights
+
+		var ambientLight = new THREE.AmbientLight( 0x606060 );
+		scene.add( ambientLight );
+
+		var directionalLight = new THREE.DirectionalLight( 0xffffff );
+		directionalLight.position.set( 0, -0.75, -0.5 ).normalize();
+		scene.add( directionalLight );
+
+		renderer = new THREE.WebGLRenderer( { antialias: true } );
+		renderer.setClearColor( 0x111111);
+		renderer.setPixelRatio( window.devicePixelRatio );
+		renderer.setSize( window.innerWidth, window.innerHeight );
+		container.appendChild( renderer.domElement );
+
+		//
+
+		window.addEventListener( 'resize', onWindowResize, false );
 
 	}
 
-	var material = new THREE.LineBasicMaterial( { color: 0x000000, opacity: 0.2, transparent: true } );
+	function onWindowResize() {
 
-	var line = new THREE.LineSegments( geometry, material );
-	// scene.add( line );
+		camera.aspect = window.innerWidth / window.innerHeight;
+		camera.updateProjectionMatrix();
+		renderer.setSize( window.innerWidth, window.innerHeight );
 
-	//
-
-
-
-	// Lights
-
-	var ambientLight = new THREE.AmbientLight( 0x606060 );
-	scene.add( ambientLight );
-
-	var directionalLight = new THREE.DirectionalLight( 0xffffff );
-	directionalLight.position.set( 0, -0.75, -0.5 ).normalize();
-	scene.add( directionalLight );
-
-	renderer = new THREE.WebGLRenderer( { antialias: true } );
-	renderer.setClearColor( 0x111111);
-	renderer.setPixelRatio( window.devicePixelRatio );
-	renderer.setSize( window.innerWidth, window.innerHeight );
-	container.appendChild( renderer.domElement );
-
-	//
-
-	window.addEventListener( 'resize', onWindowResize, false );
-
-}
-
-function onWindowResize() {
-
-	camera.aspect = window.innerWidth / window.innerHeight;
-	camera.updateProjectionMatrix();
-	renderer.setSize( window.innerWidth, window.innerHeight );
-
-}
+	}
 
 
-function animate() {
+	function animate() {
 
-	requestAnimationFrame( animate );
-	render();
+		requestAnimationFrame( animate );
+		render();
 
-}
+	}
 
 
-function render() {
+	function render() {
 
-	controls.update();
-	TWEEN.update();
-	stats.update();
-	renderer.render( scene, camera );
+		controls.update();
+		TWEEN.update();
+		stats.update();
+		renderer.render( scene, camera );
 
-}
+	}
 
