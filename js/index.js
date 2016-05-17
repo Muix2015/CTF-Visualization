@@ -416,7 +416,7 @@
 							);
 						teamsData[i] = constructTeamObject(i,teamPosition);
 
-						inc += 0.09091;
+						inc += 0.090909;
 					}
 
 
