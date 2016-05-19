@@ -37,9 +37,28 @@
 			scene, renderer, clock = new THREE.Clock(true),
 			controls, container,
 			options, spawnerOptions, particleSystem;
+		var curve;
+		var pos=0;
 
 		init();
 		animate();
+
+		function makeSkybox( urls, size ) {
+
+			var skyboxCubemap = new THREE.CubeTextureLoader().load( urls );
+			skyboxCubemap.format = THREE.RGBFormat;
+			var skyboxShader = THREE.ShaderLib['cube'];
+			skyboxShader.uniforms['tCube'].value = skyboxCubemap;
+			return new THREE.Mesh(
+				new THREE.BoxGeometry( size, size, size ),
+				new THREE.ShaderMaterial({
+					fragmentShader : skyboxShader.fragmentShader, vertexShader : skyboxShader.vertexShader,
+					uniforms : skyboxShader.uniforms, depthWrite : false, side : THREE.BackSide
+				})
+			);
+
+		}
+
 
 		function init() {
 
@@ -60,7 +79,8 @@
 			// relative to the position of the particle system, but you will probably only need one
 			// system for your whole scene
 			particleSystem = new THREE.GPUParticleSystem({
-				maxParticles: 250000
+				maxParticles: 25000,
+				containerCount: 25
 			});
 			scene.add( particleSystem);
 
@@ -68,23 +88,23 @@
 			// options passed during each spawned
 			options = {
 				position: new THREE.Vector3(),
-				positionRandomness: 0.8,
+				positionRandomness: .3,
 				velocity: new THREE.Vector3(),
-				velocityRandomness: 1,
+				velocityRandomness: .5,
 				color: 0xaa88ff,
 				colorRandomness: 0,
 				turbulence: .5,
-				lifetime: 10,
+				lifetime: 1,
 				size: 5,
-				sizeRandomness: 10
+				sizeRandomness: 1
 			};
-
 			spawnerOptions = {
-				spawnRate: 150,
-				horizontalSpeed: 50.5,
-				verticalSpeed: 50.33,
-				timeScale: 7
+				spawnRate: 10000,
+				horizontalSpeed: 1.5,
+				verticalSpeed: 1.33,
+				timeScale: 1
 			}
+
 
 			renderer = new THREE.WebGLRenderer();
 			renderer.setPixelRatio(window.devicePixelRatio);
@@ -109,35 +129,150 @@
 			window.addEventListener('resize', onWindowResize, false);
 
 
-			// new TWEEN.Tween( particleSystem)
-			// .to( {}, 10000 )
-			// .onUpdate(function(){
+			new TWEEN.Tween( particleSystem)
+			.to( {}, 100000 )
+			.onUpdate(function(){
 
-			// 	var delta = 1;
+				var delta = clock.getDelta() * spawnerOptions.timeScale;
 
-			// 	tick += delta;
+			tick += delta;
 
-			// 	if (tick < 0) tick = 0;
+			if (tick < 0) tick = 0;
 
-			// 	if (delta > 0) {
-			// 		// options.position.x = Math.sin(tick * spawnerOptions.horizontalSpeed) * 20;
-			// 		// options.position.y = Math.sin(tick * spawnerOptions.verticalSpeed) * 10;
-			// 		options.position.z = Math.sin(tick * spawnerOptions.horizontalSpeed + spawnerOptions.verticalSpeed) * 5;
+			if (delta > 0) {
+				options.position.copy(curve.getPointAt(pos));
+				// options.position.x = Math.sin(tick * spawnerOptions.horizontalSpeed) * 20;
+				// options.position.y = Math.sin(tick * spawnerOptions.verticalSpeed) * 10;
+				// options.position.z = Math.sin(tick * spawnerOptions.horizontalSpeed + spawnerOptions.verticalSpeed) * 5;
 
-			// 		// options.position.x += 0.1;
 
-			// 		for (var x = 0; x < spawnerOptions.spawnRate * delta; x++) {
-			// 			// Yep, that's really it.	Spawning particles is super cheap, and once you spawn them, the rest of
-			// 			// their lifecycle is handled entirely on the GPU, driven by a time uniform updated below
-			// 			particleSystem.spawnParticle(options);
-			// 		}
-			// 	}
-			// 	console.log(delta);
+				// options.position.x += 0.1;
 
-			// 	particleSystem.update(tick);
+				for (var x = 0; x < spawnerOptions.spawnRate * delta; x++) {
+					// Yep, that's really it.	Spawning particles is super cheap, and once you spawn them, the rest of
+					// their lifecycle is handled entirely on the GPU, driven by a time uniform updated below
+					particleSystem.spawnParticle(options);
+				}
+			}
+			console.log(delta);
 
-			// })
-			// .start();
+			particleSystem.update(tick);
+
+			})
+			.start();
+			new TWEEN.Tween( particleSystem)
+			.to( {}, 100000 )
+			.onUpdate(function(){
+
+				var delta = clock.getDelta() * spawnerOptions.timeScale;
+
+				tick += delta;
+
+				if (tick < 0) tick = 0;
+
+				if (delta > 0) {
+					options.position.copy(curve.getPointAt(pos)).add(new THREE.Vector3(10000,100,100));
+					// options.position.x = Math.sin(tick * spawnerOptions.horizontalSpeed) * 20;
+					// options.position.y = Math.sin(tick * spawnerOptions.verticalSpeed) * 10;
+					// options.position.z = Math.sin(tick * spawnerOptions.horizontalSpeed + spawnerOptions.verticalSpeed) * 5;
+
+
+					// options.position.x += 0.1;
+
+					for (var x = 0; x < spawnerOptions.spawnRate * delta; x++) {
+						// Yep, that's really it.	Spawning particles is super cheap, and once you spawn them, the rest of
+						// their lifecycle is handled entirely on the GPU, driven by a time uniform updated below
+						particleSystem.spawnParticle(options);
+					}
+				}
+				console.log(delta);
+
+				particleSystem.update(tick);
+
+			})
+			.start();
+
+						new TWEEN.Tween( particleSystem)
+			.to( {}, 100000 )
+			.onUpdate(function(){
+
+				var delta = clock.getDelta() * spawnerOptions.timeScale;
+
+				tick += delta;
+
+				if (tick < 0) tick = 0;
+
+				if (delta > 0) {
+					options.position.copy(curve.getPointAt(pos)).add(new THREE.Vector3(1000,100,100));
+					// options.position.x = Math.sin(tick * spawnerOptions.horizontalSpeed) * 20;
+					// options.position.y = Math.sin(tick * spawnerOptions.verticalSpeed) * 10;
+					// options.position.z = Math.sin(tick * spawnerOptions.horizontalSpeed + spawnerOptions.verticalSpeed) * 5;
+
+
+					// options.position.x += 0.1;
+
+					for (var x = 0; x < spawnerOptions.spawnRate * delta; x++) {
+						// Yep, that's really it.	Spawning particles is super cheap, and once you spawn them, the rest of
+						// their lifecycle is handled entirely on the GPU, driven by a time uniform updated below
+						particleSystem.spawnParticle(options);
+					}
+				}
+				console.log(delta);
+
+				particleSystem.update(tick);
+
+			})
+			.start();
+									new TWEEN.Tween( particleSystem)
+			.to( {}, 100000 )
+			.onUpdate(function(){
+
+				var delta = clock.getDelta() * spawnerOptions.timeScale;
+
+				tick += delta;
+
+				if (tick < 0) tick = 0;
+
+				if (delta > 0) {
+					options.position.copy(curve.getPointAt(pos)).add(new THREE.Vector3(1000,10000,100));
+					// options.position.x = Math.sin(tick * spawnerOptions.horizontalSpeed) * 20;
+					// options.position.y = Math.sin(tick * spawnerOptions.verticalSpeed) * 10;
+					// options.position.z = Math.sin(tick * spawnerOptions.horizontalSpeed + spawnerOptions.verticalSpeed) * 5;
+
+
+					// options.position.x += 0.1;
+
+					for (var x = 0; x < spawnerOptions.spawnRate * delta; x++) {
+						// Yep, that's really it.	Spawning particles is super cheap, and once you spawn them, the rest of
+						// their lifecycle is handled entirely on the GPU, driven by a time uniform updated below
+						particleSystem.spawnParticle(options);
+					}
+				}
+				console.log(delta);
+
+				particleSystem.update(tick);
+
+			})
+			.start();
+		var r = "img/skybox1/";
+		var urls = [ r + "px.jpg", r + "nx.jpg",
+					 r + "py.jpg", r + "ny.jpg",
+					 r + "pz.jpg", r + "nz.jpg" ];
+
+
+		// var r = "img/skybox/";
+		// var urls = [ r + "px.jpg", r + "nx.jpg",
+		// 			 r + "nz.jpg", r + "pz.jpg",
+		// 			 r + "py.jpg", r + "ny.jpg" ];
+
+		scene.add( makeSkybox( urls, 50000 ) );
+
+		curve = new THREE.SplineCurve3([
+							    new THREE.Vector3(0, 0, 0),
+							    new THREE.Vector3(1000, 0 , 800), 
+							    new THREE.Vector3(2000 , 0, 800),
+							    new THREE.Vector3(3000, 0, 0)
+							]);
 
 		}
 
@@ -151,33 +286,37 @@
 		}
 
 		function animate() {
-
+			pos+=0.008;
+			if(pos>1)
+				pos=0;
 			requestAnimationFrame(animate);
 
 			controls.update();
 
-			var delta = clock.getDelta() * spawnerOptions.timeScale;
+			// var delta = clock.getDelta() * spawnerOptions.timeScale;
 
-			tick += delta;
+			// tick += delta;
 
-			if (tick < 0) tick = 0;
+			// if (tick < 0) tick = 0;
 
-			if (delta > 0) {
-				// options.position.x = Math.sin(tick * spawnerOptions.horizontalSpeed) * 20;
-				// options.position.y = Math.sin(tick * spawnerOptions.verticalSpeed) * 10;
-				options.position.z = Math.sin(tick * spawnerOptions.horizontalSpeed + spawnerOptions.verticalSpeed) * 5;
+			// if (delta > 0) {
+			// 	options.position.copy(curve.getPointAt(pos));
+			// 	// options.position.x = Math.sin(tick * spawnerOptions.horizontalSpeed) * 20;
+			// 	// options.position.y = Math.sin(tick * spawnerOptions.verticalSpeed) * 10;
+			// 	// options.position.z = Math.sin(tick * spawnerOptions.horizontalSpeed + spawnerOptions.verticalSpeed) * 5;
 
-				// options.position.x += 0.1;
 
-				for (var x = 0; x < spawnerOptions.spawnRate * delta; x++) {
-					// Yep, that's really it.	Spawning particles is super cheap, and once you spawn them, the rest of
-					// their lifecycle is handled entirely on the GPU, driven by a time uniform updated below
-					particleSystem.spawnParticle(options);
-				}
-			}
-			console.log(delta);
+			// 	// options.position.x += 0.1;
 
-			particleSystem.update(tick);
+			// 	for (var x = 0; x < spawnerOptions.spawnRate * delta; x++) {
+			// 		// Yep, that's really it.	Spawning particles is super cheap, and once you spawn them, the rest of
+			// 		// their lifecycle is handled entirely on the GPU, driven by a time uniform updated below
+			// 		particleSystem.spawnParticle(options);
+			// 	}
+			// }
+			// console.log(delta);
+
+			// particleSystem.update(tick);
 			render();
 
 		}

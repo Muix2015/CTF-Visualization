@@ -7,7 +7,6 @@
 	var teamMesh, teamMaterial;
 
 	var missileDae;
-	var clock = new THREE.Clock();
 
 	var missileLauncher = new THREE.Group();					//发射架组，发射架的模型有两个部分，会先添加进Group中再进行操作
 	var teamFlag = new THREE.Group();                           //旗帜组  暂时没用到
@@ -26,78 +25,11 @@
 	//队伍数据数组,会保存每个队伍的模型和信息(如血量)
 	var teamsData = [];
 
+	var clock = new THREE.Clock(true),options, spawnerOptions, particleSystem,tick=0;
 
 	init();
 	animate();
- 	
-	
-    	/*
-	 * 攻击函数
-	 * @param startTeam 	攻击方
-	 * @param endTeam 		防守方
-	 * @param serviceNum    被攻击的服务编号
-	 * @param time          导弹飞行时间
-	 */
-	 //the first attack ,special effect..
-	// function specialCamera(startTeam,endTeam,serviceNum){
-		
-	// 	var camera = new THREE.PerspectiveCamera(70,window.innerWidth/window.innerHeight,1,1000);
-	// 	scene.add(camera);
-	// 	//control
-	// 	controls = new function () {
- //          this.numberOfPoints = 5;
- //          this.segments = 64;
- //          this.radius = 3;
- //          this.radiusSegments = 5;
- //          this.closed = false;
- //          this.points = getPoints();
- //          generatePoints(this.points, this.segments, this.radius, this.radiusSegments, this.closed);
- //        }
- //        pathControls = new THREE.PathControls(camera);
- //        // configure the controller
- //        pathControls.duration = 70
- //        pathControls.useConstantSpeed = true;
- //        pathControls.lookSpeed = 0.1;
- //        pathControls.lookVertical = true;
- //        pathControls.lookHorizontal = true;
- //        pathControls.verticalAngleMap = {srcRange: [ 0, 2 * Math.PI ], dstRange: [ 1.1, 3.8 ]};
- //        pathControls.horizontalAngleMap = {srcRange: [ 0, 2 * Math.PI ], dstRange: [ 0.3, Math.PI - 0.3 ]};
- //        pathControls.lon = 300;
- //        pathControls.lat = 40;
- //        // add the path
- //        controls.points.forEach(function(e) {
- //          pathControls.waypoints.push([e.x, e.y, e.z]) });
- //        // when done configuring init the control
- //        pathControls.init();
- //        // add the animationParent to the scene and start the animation
- //        scene.add(pathControls.animationParent);
- //        pathControls.animation.play(true, 0 );
-	// //	scene.add(controls.animationParent);
-	// 	renderer = new THREE.WebGLRenderer();
- //        renderer.setSize( window.innerWidth, window.innerHeight );
- //        document.body.appendChild( renderer.domElement );
-       
- //        render();
 
-	// }
-
-	 // function getPoints() {
-  //       var points = [];
-  //       points.push(new THREE.Vector3(0, 20, 0));
-  //       points.push(new THREE.Vector3(100, 25, 0));
-  //       points.push(new THREE.Vector3(100, 20, 100));
-  //       points.push(new THREE.Vector3(0, 25, 100));
-  //       points.push(new THREE.Vector3(0, 20, 0));
-  //       return points;
-  //     }
-
-
-  //    function generatePoints(points, segments, radius, radiusSegments, closed) {
-  //       // add n random spheres
-  //       var tube = new THREE.TubeGeometry(new THREE.SplineCurve3(points), segments, radius, radiusSegments, false, closed);
-  //       //var tubeMesh = createMesh(tube);
-  //      // scene.add(tubeMesh);
-  //     }
 
 	/*
 	 * 攻击函数
@@ -105,12 +37,8 @@
 	 * @param endTeam 		防守方
 	 * @param serviceNum    被攻击的服务编号
 	 * @param time          导弹飞行时间
-	 * @param isFirst       onclick first attact special effect...
-	 * @param startTeamScore//as said.
-	 * @param endTeamScore  score of attacted team 
 	 */
-
-	function attack( startTeam , endTeam , serviceNum, time ,isFirst,startTeamScore,endTeamScore){
+	function attack( startTeam , endTeam , serviceNum, time ){
 
 		var missile = missileDae.clone();
 		var quaternion = new THREE.Quaternion();
@@ -133,7 +61,7 @@
 							    new THREE.Vector3(endPos.x, endPos.y, 50)
 							]),
 			pos : 0
-		}        
+		}
 
 		var geometry = new THREE.Geometry();
 		geometry.vertices = trajectory.curve.getPoints(50);
@@ -142,90 +70,11 @@
 
 		scene.add( line );
 
-		var det_x = 100* Math.sign(dx);
-		var det_y = 100* Math.sign(dy);
-		//camera position curve 轨迹  curve是轨迹的曲线   pos会用于后面tween中的计算
-		var cameraTrajectory = {
-			curve :	 new THREE.SplineCurve3([
-							    new THREE.Vector3(startPos.x-det_x, startPos.y-det_y, 270),
-							    new THREE.Vector3(startPos.x + dx/3-det_x, startPos.y-det_y + dy/3, d/4+120), 
-							    new THREE.Vector3(endPos.x - dx/3-det_x, endPos.y - dy/3-det_y, d/4+120),
-							    new THREE.Vector3(endPos.x-det_x, endPos.y-det_y, 170)
-							]),
-			pos : 0
-		}
-		var cameraGeometry = new THREE.Geometry();
-		cameraGeometry.vertices = cameraTrajectory.curve.getPoints(50);
-		var cameraMaterial = new THREE.LineBasicMaterial({color : 0xee00ee});
-		var cameraLine = new THREE.Line(cameraGeometry, cameraMaterial);
-
-		scene.add( cameraLine );
-
 
 		var tangent; 
 
-		// the first attact special effect 
-        // curve of the camera;
-        
-        
-
-		if (isFirst == 1){
-         	//发射导弹
-         	//specialCamera(startTeam,endTeam,serviceNum);
-         	
-         	// camera.position.set();  
-         	// camera.rotation.x = RAD_90;
-
-         	// var ncamera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 100000 );
-										// 			ncamera.position.set(startTeam.launcher.position);
-										// 			ncamera.rotation.x = RAD_90;
-										// 			ncamera.lookAt(endTeam.services[serviceNum].position); 
-         	// var bcamera = camera.clone();
-
-			var launch = new TWEEN.Tween( trajectory )
-												.to({pos:1},time)
-												.onStart(function(){
-													scene.add(missile);
-													startTeam.launcher.children[1].visible = false;  
-													camera.lookAt(endTeam.services[serviceNum].position);  
-													// scene.remove(camera);
-													// camera = ncamera.clone();
-													// scene.add(camera);
-												})
-												.onUpdate(function(){
-													var _x = trajectory.curve.getPointAt(trajectory.pos).x-det_x ;
-													var	_y = trajectory.curve.getPointAt(trajectory.pos).y-det_y ;
-													var _z = trajectory.curve.getPointAt(trajectory.pos).z+120 ;
-													missile.position.copy(trajectory.curve.getPointAt(trajectory.pos));  	
-													camera.position.set(_x,_y,_z);  //获取位置
-													camera.rotation.x = RAD_90;
-													camera.lookAt(trajectory.curve.getPointAt(trajectory.pos));
-													tangent = trajectory.curve.getTangentAt(trajectory.pos).normalize();    //获取导弹轨迹曲线的切向方向向量
-													quaternion.setFromUnitVectors(missileVec , tangent);                    //根据切向向量和导弹初始方向向量计算四元数
-													rotation.setFromQuaternion(quaternion,'XYZ');							//将四元数转换成欧拉角
-													missile.rotation.set(rotation.x,rotation.y,rotation.z);
-													// particle(trajectory.pos*10);
-												})
-												.onComplete(function(){
-													scene.remove(missile);
-													missile = null;
-													scene.remove(line);
-													line = null;
-													scene.remove(cameraLine);
-													cameraLine = null;
-													startTeam.launcher.children[1].visible = true;
-													// scene.remove(camera);
-													// camera = bcamera.clone();
-													// scene.add(camera);
-													// ncamera = null;
-													camera.position.set(0, -2800, 2000 );
-
-												});
-
-
-		}else{
-			//发射导弹
-			var launch = new TWEEN.Tween( trajectory )
+		//发射导弹
+		var launch = new TWEEN.Tween( trajectory )
 												.to({pos:1},time)
 												.onStart(function(){
 													scene.add(missile);
@@ -239,9 +88,6 @@
 													missile.rotation.set(rotation.x,rotation.y,rotation.z);
 													// particle(trajectory.pos*10);
 
-													//set camera position for first click camera 
-                                                       
-
 												})
 												.onComplete(function(){
 													scene.remove(missile);
@@ -250,12 +96,6 @@
 													line = null;
 													startTeam.launcher.children[1].visible = true;
 												});
-    }
- 
-
-  //       camera.position.set( 	0, -2800, 2000 );
-		// camera.rotation.x = RAD_90;
-		// camera.lookAt( new THREE.Vector3() );
 		var rot = launcherVec.angleTo(targetVec);
 
 		// rot = dy > 0 ? -rot : dy==0 ? dx<0 ? -rot : rot : rot;	
@@ -284,8 +124,8 @@
 			endIndex = Math.ceil(Math.random()*15);
 		}while(endIndex == startIndex);
 		var serviceNum = Math.ceil(Math.random()*4);
-		attack(teamsData[startIndex],teamsData[endIndex],serviceNum,1800,1,80,95);		
-		var time = Math.ceil(4000);
+		attack(teamsData[startIndex],teamsData[endIndex],serviceNum,1800);		
+		var time = Math.ceil(Math.random()*3000);
 		setTimeout(attactTest,time);		//间隔一段时间后再次调用此函数
 	}
 
@@ -296,6 +136,7 @@
 	 * @return  	   天空盒
 	 */
 	function makeSkybox( urls, size ) {
+
 		var skyboxCubemap = new THREE.CubeTextureLoader().load( urls );
 		skyboxCubemap.format = THREE.RGBFormat;
 		var skyboxShader = THREE.ShaderLib['cube'];
@@ -307,16 +148,19 @@
 				uniforms : skyboxShader.uniforms, depthWrite : false, side : THREE.BackSide
 			})
 		);
+
 	}
 
 
+
 	function init() {
+
 		container = document.createElement( 'div' );
 		document.body.appendChild( container );
 
 		camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 100000 );
 		camera.position.set( 0, -2800, 2000 );
-		camera.rotation.x = RAD_90;
+		// camera.rotation.x = RAD_90;
 		camera.lookAt( new THREE.Vector3() );
 
 		scene = new THREE.Scene();
@@ -329,6 +173,33 @@
 		controls.noPan = false;
 		controls.staticMoving = true;
 		controls.dynamicDampingFactor = 0.3;
+
+		// particleSystem = new THREE.GPUParticleSystem({
+		// 	maxParticles: 250000
+		// });
+		// scene.add( particleSystem);
+
+
+		// options passed during each spawned
+		// options = {
+		// 	position: new THREE.Vector3(),
+		// 	positionRandomness: 0.8,
+		// 	velocity: new THREE.Vector3(),
+		// 	velocityRandomness: 1,
+		// 	color: 0xaa88ff,
+		// 	colorRandomness: 0,
+		// 	turbulence: .5,
+		// 	lifetime: 10,
+		// 	size: 5,
+		// 	sizeRandomness: 10
+		// };
+
+		// spawnerOptions = {
+		// 	spawnRate: 150,
+		// 	horizontalSpeed: 50.5,
+		// 	verticalSpeed: 50.33,
+		// 	timeScale: 7
+		// }
 
 		stats = new Stats();
 		stats.domElement.id = 'fps';
@@ -362,7 +233,7 @@
 
 
 
-
+		//宇宙天空盒
 
 		var r = "img/skybox1/";
 		var urls = [ r + "px.jpg", r + "nx.jpg",
@@ -374,16 +245,18 @@
 		// var urls = [ r + "px.jpg", r + "nx.jpg",
 		// 			 r + "nz.jpg", r + "pz.jpg",
 		// 			 r + "py.jpg", r + "ny.jpg" ];
+
 		scene.add( makeSkybox( urls, 50000 ) );
 
 
 
 		/*
 		 * 构造队伍的模型，包括导弹发射架及五个服务的模型
+		 * @param  num         编号
 		 * @param  position    位置
 		 * @return obj 	       包含队伍所有模型及信息的对象
 		 */
-		function constructTeamObject(position){
+		function constructTeamObject ( num , position ){
 
 			var obj;
 
@@ -414,37 +287,37 @@
 				service.position.y = orbit.getPointAt(pos).y;
 				service.position.add(serviceOffset);
 				service.rotation.y = -i*2*Math.PI/5+RAD_90;
-				// new TWEEN.Tween(service.position).to({z: 10},1000).delay(Math.random()*500).repeat( Infinity ).yoyo(true).start();
+				new TWEEN.Tween(service.position).to({z: 10},1000).delay(Math.random()*500).repeat( Infinity ).yoyo(true).start();
 				servicesArr.push(service);
 				scene.add(service);
 				pos+=0.2;
 			}
 
 
-			var logoTexture =	THREE.ImageUtils.loadTexture('img/flag.png');			
+			var logoTexture =	THREE.ImageUtils.loadTexture('img/logo/'+(num+1)+'.png');			
 			var logoGeo =new THREE.BoxGeometry(300,0.1,200);
 			var logoMat = new THREE.MeshBasicMaterial( {map : logoTexture} );
 			logoMat.transparent=true;
-			logoMat.opacity= 0.2;
+			logoMat.opacity= 0.4;
 			var logo = new THREE.Mesh( logoGeo, logoMat );
 			logo.position.copy(position).add(logoOffset);
 			scene.add(logo);
 
 			return obj = {
-				launcher:teamLauncherMesh,                     		//导弹发射架
-				services:servicesArr,                             	//服务
-				base:teamBaseMesh,                                	//发射架下方的棱台
+				launcher:teamLauncherMesh,							//导弹发射架
+				services:servicesArr,                   			//服务
+				base:teamBaseMesh,                               	//发射架下方的棱台
 				logo:null,                          				//队伍LOGO 将来用于保存图片文件路径或名字
-				HP:100,                                             //总血量
+				HP:100,                                        		//总血量
 				currentHP:100,                     					//当前血量
-				position:teamLauncherMesh.position                	//位置
+				position:teamLauncherMesh.position              	//位置
 			}
 
 		}
 
 
 		//加载导弹发射架的第一个部分
-		loader.load( './models/missileLauncherP1.dae', function ( collada ) {
+		loader.load( './models/MissileLauncherP1.dae', function ( collada ) {
 			var p1 = collada.scene;
 			p1.traverse( function ( child ) {
 				if ( child instanceof THREE.SkinnedMesh ) {
@@ -459,7 +332,7 @@
 			// scene.add(p1);
 
 			//加载导弹发射架的第二个部分
-			loader.load( './models/missileLauncherP2.dae', function ( collada ) {
+			loader.load( './models/MissileLauncherP2.dae', function ( collada ) {
 				var p2 = collada.scene;
 				p2.traverse( function ( child ) {
 					if ( child instanceof THREE.SkinnedMesh ) {
@@ -501,15 +374,59 @@
 					console.log(sphere);
 					// scene.add(sphere);
 
+					var innerOrbit = new THREE.EllipseCurve(
+						0, 0,            
+						1300, 1300,          
+						0,  2*Math.PI,  
+						false,            
+						0                
+					);
 
+					var outerOrbit = new THREE.EllipseCurve(
+						0, 0,            
+						2500, 2500,          
+						0,  2*Math.PI,  
+						false,            
+						0                
+					);
 
+					var inc =0;
+					var teamPosition =  new THREE.Vector3( 0, 0, 0 );
+					
+					teamsData[0] = constructTeamObject( 0, teamPosition );
 
-					for(var i=0;i<16;i++){
+					for(var i=0;i<5;i++){
+						teamPosition = new THREE.Vector3(
+								innerOrbit.getPointAt(inc).x ,
+								innerOrbit.getPointAt(inc).y ,
+								0
+							);
+						teamsData[i] = constructTeamObject(i,teamPosition);
 
-						var position = new THREE.Vector3(-1350+(i%4)*900,-1350+Math.floor(i/4)*900,0);
-						teamsData[i] = constructTeamObject(position);
-
+						inc += 0.2;
 					}
+
+					inc = 0;
+
+					for(var i=5;i<16;i++){
+						teamPosition = new THREE.Vector3(
+								outerOrbit.getPointAt(inc).x ,
+								outerOrbit.getPointAt(inc).y ,
+								0
+							);
+						teamsData[i] = constructTeamObject(i,teamPosition);
+
+						inc += 0.090909;
+					}
+
+
+
+					// for(var i=5;i<16;i++){
+
+					// 	var position = new THREE.Vector3(-1350+(i%4)*900,-1350+Math.floor(i/4)*900,0);
+					// 	teamsData[i] = constructTeamObject(i,position);
+
+					// }
 
 					attactTest();
 
@@ -590,10 +507,32 @@
 
 
 	function animate() {
+
+		requestAnimationFrame( animate );
+		// var delta = clock.getDelta() * spawnerOptions.timeScale;
 		
-        
-        requestAnimationFrame( animate );
-        render();
+		// tick += delta;
+
+		// if (tick < 0) tick = 0;
+
+		// if (delta > 0) {
+		// 	// options.position.x = Math.sin(tick * spawnerOptions.horizontalSpeed) * 20;
+		// 	// options.position.y = Math.sin(tick * spawnerOptions.verticalSpeed) * 10;
+		// 	options.position.z = Math.sin(tick * spawnerOptions.horizontalSpeed + spawnerOptions.verticalSpeed) * 5;
+
+		// 	// options.position.x += 0.1;
+
+		// 	for (var x = 0; x < spawnerOptions.spawnRate * delta; x++) {
+		// 		// Yep, that's really it.	Spawning particles is super cheap, and once you spawn them, the rest of
+		// 		// their lifecycle is handled entirely on the GPU, driven by a time uniform updated below
+		// 		particleSystem.spawnParticle(options);
+		// 	}
+		// }
+	
+
+		// particleSystem.update(tick);
+
+		render();
 
 	}
 
