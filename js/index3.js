@@ -28,79 +28,10 @@
 
 	var particleSystems = [];
 
-		for(var i=0;i<50;i++){
-			var obj = {
-				particleSystem : new THREE.GPUParticleSystem({
-										maxParticles: 2500
-									}),
-				options : {
-								position: new THREE.Vector3(),
-								positionRandomness: .3,
-								velocity: new THREE.Vector3(),
-								velocityRandomness: .5,
-								color: 0xaa88ff,
-								colorRandomness: 0,
-								turbulence: .5,
-								lifetime: 1,
-								size: 5,
-								sizeRandomness: 1,
-								pos: 0
-							},
-				clock : new THREE.Clock(true),
-				tick : 0,
-				available : true
-			};
-
-			particleSystems.push(obj);
-		};
-	var spawnerOptions = {
-				spawnRate: 1000,
-				horizontalSpeed: 1.5,
-				verticalSpeed: 1.33,
-				timeScale: 1
-			};
 
 	init();
 	animate();
 
-
-	function pstest(curve) {
-
-		for(var i=0;i<particleSystems.length;i++){
-			if(particleSystems[i].available){
-				console.log(i);
-				var system = particleSystems[i];
-				system.available = false;
-				scene.add(system.particleSystem);
-				new TWEEN.Tween(system.options)
-				.to( {pos:1}, 1000 )
-				.onUpdate(function(){
-					var delta = system.clock.getDelta() * spawnerOptions.timeScale;
-
-					system.tick += delta;
-
-					if (system.tick < 0) tick1 = 0;
-
-					if (delta > 0) {
-						system.options.position.copy(curve.getPointAt(system.options.pos));
-						for (var x = 0; x < spawnerOptions.spawnRate * delta; x++) {
-							system.particleSystem.spawnParticle(system.options);
-						}
-					}
-					system.particleSystem.update(system.tick);
-
-				})
-				.onComplete(function(){
-					scene.remove(system.particleSystem);
-					system.tick = 0;
-					system.options.pos = 0;
-					system.available = true;
-				})
-				.start();
-				break;
-			}
-		}
-	}
 
 
 	/*
@@ -144,35 +75,35 @@
 
 
 		var tangent; 
-		pstest(trajectory.curve);
 
 		//发射导弹
 		var launch = new TWEEN.Tween( trajectory )
-												.to({pos:1},time)
-												.onStart(function(){
-													scene.add(missile);
-													startTeam.launcher.children[1].visible = false;         
-												})
-												.onUpdate(function(){
-											
-													missile.position.copy(trajectory.curve.getPointAt(trajectory.pos));  	//获取位置
-													tangent = trajectory.curve.getTangentAt(trajectory.pos).normalize();    //获取导弹轨迹曲线的切向方向向量
-													quaternion.setFromUnitVectors(missileVec , tangent);                    //根据切向向量和导弹初始方向向量计算四元数
-													rotation.setFromQuaternion(quaternion,'XYZ');							//将四元数转换成欧拉角
-													missile.rotation.set(rotation.x,rotation.y,rotation.z);
-													
-													// camera.position.copy(trajectory.curve.getPointAt(trajectory.pos)).add(cameraOffset);
-													// camera.lookAt(missile.position);
-													// particle(trajectory.pos*10);
+							.to({pos:1},time)
+							.onStart(function(){
+								scene.add(missile);
+								startTeam.launcher.children[1].visible = false;         
+							})
+							.onUpdate(function(){
+						
+								missile.position.copy(trajectory.curve.getPointAt(trajectory.pos));  	//获取位置
+								tangent = trajectory.curve.getTangentAt(trajectory.pos).normalize();    //获取导弹轨迹曲线的切向方向向量
+								quaternion.setFromUnitVectors(missileVec , tangent);                    //根据切向向量和导弹初始方向向量计算四元数
+								rotation.setFromQuaternion(quaternion,'XYZ');							//将四元数转换成欧拉角
+								missile.rotation.set(rotation.x,rotation.y,rotation.z);
+								
+								// camera.position.copy(trajectory.curve.getPointAt(trajectory.pos)).add(cameraOffset);
+								// camera.lookAt(missile.position);
+								// particle(trajectory.pos*10);
 
-												})
-												.onComplete(function(){
-													scene.remove(missile);
-													missile = null;
-													scene.remove(line);
-													line = null;
-													startTeam.launcher.children[1].visible = true;
-												});
+							})
+							.onComplete(function(){
+								scene.remove(missile);
+								missile = null;
+								scene.remove(line);
+								line = null;
+								startTeam.launcher.children[1].visible = true;
+							});
+
 		var rot = launcherVec.angleTo(targetVec);
 
 		// rot = dy > 0 ? -rot : dy==0 ? dx<0 ? -rot : rot : rot;	
@@ -181,11 +112,12 @@
 
 		//旋转发射架 对准目标
 		var aim = new TWEEN.Tween( startTeam.launcher.rotation )
-												.to({z:rot},500)
-												.onComplete(function(){
-													launch.start();				//旋转完成后发射
-												})
-												.start();
+						.to({z:rot},500)
+						.onComplete(function(){
+							launch.start();				//旋转完成后发射
+							startParticles(trajectory.curve , time);
+						})
+						.start();
 
 	}
 
@@ -229,6 +161,81 @@
 	}
 
 
+	function initparticleSystems(){
+
+		var canvas = document.createElement( 'canvas' );
+		canvas.width = 16;
+		canvas.height = 16;
+
+		var context = canvas.getContext( '2d' );
+		var gradient = context.createRadialGradient( canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2 );
+		gradient.addColorStop( 0, 'rgba(255,0,0,1)' );
+		gradient.addColorStop( 0.2, 'rgba(255,10,10,1)' );
+		gradient.addColorStop( 0.4, 'rgba(64,0,0,1)' );
+		gradient.addColorStop( 1, 'rgba(0,0,0,1)' );
+
+		context.fillStyle = gradient;
+		context.fillRect( 0, 0, canvas.width, canvas.height );
+
+		var material = new THREE.SpriteMaterial( {
+				map: new THREE.CanvasTexture( canvas ),
+				blending: THREE.AdditiveBlending
+			});
+
+		for(var i=0;i<20;i++){
+			var particleArr = {
+				available : true,
+				particles : []
+			};
+			for(var j=0;j<50;j++){
+				var particle = new THREE.Sprite( material );
+				particle.pos = 0;
+				particle.visible = false;
+				particleArr.particles.push(particle);
+				scene.add(particle);
+			}
+			particleSystems.push(particleArr);
+		}
+	}
+
+
+
+	function startParticles(curve ,time ) {
+		for(var i=0;i<particleSystems.length;i++){
+			if(particleSystems[i].available){
+
+				var particleSystem = particleSystems[i];
+				particleSystem.available = false;
+
+				var lastParticle = particleSystem.particles[particleSystem.particles.length-1];
+
+				for(var i=0;i<particleSystem.particles.length;i++){
+
+					var particle = particleSystem.particles[i];
+					particle.visible = true;
+					particle.scale.set(50-i,50-i,100-i*0.2);
+					new TWEEN.Tween( particle )
+						.delay( i*10 )
+						.to( {pos:1}, 1800 )
+						.onUpdate(function(){
+							this.position.copy(curve.getPointAt(this.pos));
+						})
+						.onComplete(function(){
+							this.pos = 0;
+							this.visible = false;
+							if(this === lastParticle){
+								particleSystem.available = true;
+							}			
+						})
+						.start();
+				}
+				break;
+			}
+		}
+
+	}
+
+
 
 	function init() {
 
@@ -251,32 +258,7 @@
 		controls.staticMoving = true;
 		controls.dynamicDampingFactor = 0.3;
 
-		particleSystem = new THREE.GPUParticleSystem({
-			maxParticles: 250000
-		});
-		scene.add( particleSystem);
-
-
-		//options passed during each spawned
-		options = {
-			position: new THREE.Vector3(),
-			positionRandomness: 0.8,
-			velocity: new THREE.Vector3(),
-			velocityRandomness: 1,
-			color: 0xaa88ff,
-			colorRandomness: 0,
-			turbulence: .5,
-			lifetime: 10,
-			size: 5,
-			sizeRandomness: 10
-		};
-
-		spawnerOptions = {
-			spawnRate: 150,
-			horizontalSpeed: 50.5,
-			verticalSpeed: 50.33,
-			timeScale: 7
-		}
+		initparticleSystems();
 
 		stats = new Stats();
 		stats.domElement.id = 'fps';
@@ -298,7 +280,7 @@
 
 		// 
 
-		var baseGeo = new THREE.CylinderGeometry(30, 40, 40, 5, 3);
+		var baseGeo = new THREE.CylinderGeometry(60, 80, 80, 5, 3);
 		var baseMaterial = new THREE.MeshPhongMaterial( { color: 0xe0e0e0 } );
 		var baseMesh = new THREE.Mesh( baseGeo, baseMaterial );
 		baseMesh.rotation.x = -RAD_90;
@@ -312,12 +294,6 @@
 		var urls = [ r + "px.jpg", r + "nx.jpg",
 					 r + "py.jpg", r + "ny.jpg",
 					 r + "pz.jpg", r + "nz.jpg" ];
-
-
-		// var r = "img/skybox/";
-		// var urls = [ r + "px.jpg", r + "nx.jpg",
-		// 			 r + "nz.jpg", r + "pz.jpg",
-		// 			 r + "py.jpg", r + "ny.jpg" ];
 
 		scene.add( makeSkybox( urls, 50000 ) );
 
@@ -349,9 +325,9 @@
 			);
 
 			teamLauncherMesh.rotation.z = Math.random()*RAD_90*4;
-			// scene.add(teamLauncherMesh);
-			// scene.add(teamBaseMesh);
-			// scene.add(flag);
+			scene.add(teamLauncherMesh);
+			scene.add(teamBaseMesh);
+			scene.add(flag);
 			var pos=0;
 			var servicesArr = [];
 			for(var i=0;i<5;i++){
@@ -362,19 +338,19 @@
 				service.rotation.y = -i*2*Math.PI/5+RAD_90;
 				new TWEEN.Tween(service.position).to({z: 10},1000).delay(Math.random()*500).repeat( Infinity ).yoyo(true).start();
 				servicesArr.push(service);
-				// scene.add(service);
+				scene.add(service);
 				pos+=0.2;
 			}
 
 
-			// var logoTexture =	THREE.ImageUtils.loadTexture('img/logo/'+(num+1)+'.png');			
-			// var logoGeo =new THREE.BoxGeometry(300,0.1,200);
-			// var logoMat = new THREE.MeshBasicMaterial( {map : logoTexture} );
-			// logoMat.transparent=true;
-			// logoMat.opacity= 0.4;
-			// var logo = new THREE.Mesh( logoGeo, logoMat );
-			// logo.position.copy(position).add(logoOffset);
-			// scene.add(logo);
+			var logoTexture =	THREE.ImageUtils.loadTexture('img/logo/'+(num+1)+'.png');			
+			var logoGeo =new THREE.BoxGeometry(300,0.1,200);
+			var logoMat = new THREE.MeshBasicMaterial( {map : logoTexture} );
+			logoMat.transparent=true;
+			logoMat.opacity= 0.4;
+			var logo = new THREE.Mesh( logoGeo, logoMat );
+			logo.position.copy(position).add(logoOffset);
+			scene.add(logo);
 
 			return obj = {
 				launcher:teamLauncherMesh,							//导弹发射架
@@ -399,7 +375,7 @@
 					}
 			});
 			// launcher.position.set(0,0,0);
-			p1.scale.set(10,10,10);
+			p1.scale.set(20,20,20);
 			p1.rotation.x = 0;
 
 			// scene.add(p1);
@@ -413,7 +389,7 @@
 							animation.play();
 						}
 				});
-				p2.scale.set(10,10,10);
+				p2.scale.set(20,20,20);
 				p2.rotation.x = 0;
 
 				missileLauncher.add(p1);
@@ -430,7 +406,7 @@
 							animation.play();
 						}
 					});
-					serviceMesh.scale.set(0.3,0.3,0.3);
+					serviceMesh.scale.set(0.6,0.6,0.6);
 					serviceMesh.position.add(serviceOffset);
 
 
@@ -466,7 +442,7 @@
 					var inc =0;
 					var teamPosition =  new THREE.Vector3( 0, 0, 0 );
 					
-					// teamsData[0] = constructTeamObject( 0, teamPosition );
+					teamsData[0] = constructTeamObject( 0, teamPosition );
 
 					for(var i=0;i<5;i++){
 						teamPosition = new THREE.Vector3(

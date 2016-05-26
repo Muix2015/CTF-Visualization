@@ -200,10 +200,10 @@ THREE.GPUParticleSystem = function(options) {
 
   var textureLoader = new THREE.TextureLoader();
 
-  self.particleNoiseTex = textureLoader.load("textures/perlin-512.png");
+  self.particleNoiseTex = textureLoader.load("img/perlin-512.png");
   self.particleNoiseTex.wrapS = self.particleNoiseTex.wrapT = THREE.RepeatWrapping;
 
-  self.particleSpriteTex = textureLoader.load("textures/particle2.png");
+  self.particleSpriteTex = textureLoader.load("img/particle2.png");
   self.particleSpriteTex.wrapS = self.particleSpriteTex.wrapT = THREE.RepeatWrapping;
 
   self.particleShaderMat = new THREE.ShaderMaterial({
