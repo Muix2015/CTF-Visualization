@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<title>three.js - gpu particle system</title>
+	<title>particle test</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 	<style>
@@ -23,8 +23,6 @@
 </head>
 
 <body>
-	<div style="position: absolute; top: 10px; width: 100%; text-align: center; color:#eee">
-		<a href="http://threejs.org" target="_blank">three.js</a> - GPU particle system plugin by <a href="http://charliehoey.com">Charlie Hoey</a>.</div>
 
 	<script src="./js/libs/three.min.js"></script>
 	<script src="./js/libs/tween.js"></script>
@@ -35,6 +33,9 @@
 	<script src="./js/libs/GPUParticleSystem.js" charset="utf-8"></script>
 
 	<script>
+
+	//和模型有冲突 原因待查
+
 		var camera, tick1 = 0,tick2 = 0,
 			scene, renderer, clock1 = new THREE.Clock(true),clock2 = new THREE.Clock(true),
 			controls, container,
@@ -228,7 +229,7 @@
 					 r + "pz.jpg", r + "nz.jpg" ];			 
 		scene.add( makeSkybox( urls, 100000 ) );
 		
-		// setTimeout("pstest()",2000);
+		pstest();
 
 		var ambientLight = new THREE.AmbientLight( 0x606060 );
 		scene.add( ambientLight );
@@ -265,7 +266,7 @@
 			missileDae.scale.set(10,10,10);
 			missileDae.rotation.x = 0;
 			// setTimeout("scene.add(missileDae)",1000);
-			scene.add(missileDae);
+			// scene.add(missileDae);
 			console.log(missileDae);
 			// console.log(particleSystems[0]);
 
