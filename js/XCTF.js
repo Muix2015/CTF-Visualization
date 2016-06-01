@@ -1,4 +1,4 @@
-
+var XCTF = function () {
 
 	var container;
 	var camera, scene, renderer;
@@ -29,9 +29,6 @@
 	var particleSystems = [];
 
 
-	init();
-	animate();
-
 
 
 	/*
@@ -41,7 +38,9 @@
 	 * @param serviceNum    被攻击的服务编号
 	 * @param time          导弹飞行时间
 	 */
-	function attack( startTeam , endTeam , serviceNum, time ){
+	function attack( startNumber , endNumber , serviceNum, time ){
+		var startTeam = teamsData[startNumber];
+		var endTeam = teamsData[endNumber];
 
 		var missile = missileDae.clone();
 		var quaternion = new THREE.Quaternion();
@@ -119,23 +118,6 @@
 						})
 						.start();
 
-	}
-
-
-
-	/*
-	 * 进攻测试   随机选取进攻队伍和防守队伍
-	 */
-	function attactTest(){
-		var startIndex = Math.ceil(Math.random()*15);
-		var endIndex;
-		do{
-			endIndex = Math.ceil(Math.random()*15);
-		}while(endIndex == startIndex);
-		var serviceNum = Math.ceil(Math.random()*4);
-		attack(teamsData[startIndex],teamsData[endIndex],serviceNum,1800);		
-		var time = Math.ceil(Math.random()*3000);
-		setTimeout(attactTest,time);		//间隔一段时间后再次调用此函数
 	}
 
 	/*
@@ -297,6 +279,26 @@
 
 		scene.add( makeSkybox( urls, 50000 ) );
 
+		function initTeams (num) {
+			var sphereGeo =new THREE.SphereGeometry(80,30);
+			var sphereMat = new THREE.MeshBasicMaterial( { color : 0xff0000 } );
+			// sphereMat.transparent=true;
+			// sphereMat.opacity=0.6;
+			var sphere = new THREE.Mesh( sphereGeo, sphereMat );
+
+			// new TWEEN.Tween(sphere.material).to({opacity: 0.3},300).repeat( 10 ).yoyo(true).onComplete(function(){scene.remove(sphere);}).start();
+
+			console.log(sphere);
+			// scene.add(sphere);
+
+			var positionData = AllTeamsPositionData[num-12];
+
+			for(var i=0;i<num;i++){
+				teamsData[i] = constructTeamObject( i, positionData[i] );
+			}
+
+		}
+
 
 
 		/*
@@ -343,7 +345,7 @@
 			}
 
 
-			var logoTexture =	THREE.ImageUtils.loadTexture('img/logo/'+(num+1)+'.png');			
+			var logoTexture =	THREE.ImageUtils.loadTexture('img/logo/'+teamsOption.data[num].logo);			
 			var logoGeo =new THREE.BoxGeometry(300,0.1,200);
 			var logoMat = new THREE.MeshBasicMaterial( {map : logoTexture} );
 			logoMat.transparent=true;
@@ -353,13 +355,15 @@
 			scene.add(logo);
 
 			return obj = {
-				launcher:teamLauncherMesh,							//导弹发射架
-				services:servicesArr,                   			//服务
-				base:teamBaseMesh,                               	//发射架下方的棱台
-				logo:null,                          				//队伍LOGO 将来用于保存图片文件路径或名字
-				HP:100,                                        		//总血量
-				currentHP:100,                     					//当前血量
-				position:teamLauncherMesh.position              	//位置
+				number : teamsOption.data[num].num,                   //队伍编号
+				name : teamsOption.data[num].name,                    //队伍名称
+				launcher : teamLauncherMesh,                          //导弹发射架
+				services : servicesArr,                               //服务
+				base : teamBaseMesh,                                  //发射架下方的棱台
+				logo : teamsOption.data[num].logo,                    //队伍LOGO 将来用于保存图片文件路径或名字
+				HP : 100,                                             //总血量
+				currentHP : 100,                                      //当前血量
+				position : teamLauncherMesh.position                  //位置
 			}
 
 		}
@@ -409,75 +413,21 @@
 					serviceMesh.scale.set(0.6,0.6,0.6);
 					serviceMesh.position.add(serviceOffset);
 
+					//加载导弹  模型和发射架的第二个部分其实是一样的，但是角度不同。为了方便还是重新加载另外一个
+					loader.load( './models/missile.dae', function ( collada ) {
+						missileDae = collada.scene;
+						missileDae.traverse( function ( child ) {
+							if ( child instanceof THREE.SkinnedMesh ) {
+									var animation = new THREE.Animation( child, child.geometry.animation );
+									animation.play();
+								}
+						});
+						missileDae.scale.set(10,10,10);
+						missileDae.rotation.x = 0;
 
-					// new TWEEN.Tween(serviceMesh.position).to({z: 10},300).repeat( Infinity ).yoyo(true).start();
+						initTeams (teamsOption.num);
 
-					var sphereGeo =new THREE.SphereGeometry(80,30);
-					var sphereMat = new THREE.MeshBasicMaterial( { color : 0xff0000 } );
-					// sphereMat.transparent=true;
-					// sphereMat.opacity=0.6;
-					var sphere = new THREE.Mesh( sphereGeo, sphereMat );
-
-					// new TWEEN.Tween(sphere.material).to({opacity: 0.3},300).repeat( 10 ).yoyo(true).onComplete(function(){scene.remove(sphere);}).start();
-
-					console.log(sphere);
-					// scene.add(sphere);
-
-					var innerOrbit = new THREE.EllipseCurve(
-						0, 0,            
-						1300, 1300,          
-						0,  2*Math.PI,  
-						false,            
-						0                
-					);
-
-					var outerOrbit = new THREE.EllipseCurve(
-						0, 0,            
-						2500, 2500,          
-						0,  2*Math.PI,  
-						false,            
-						0                
-					);
-
-					var inc =0;
-					var teamPosition =  new THREE.Vector3( 0, 0, 0 );
-					
-					teamsData[0] = constructTeamObject( 0, teamPosition );
-
-					for(var i=0;i<5;i++){
-						teamPosition = new THREE.Vector3(
-								innerOrbit.getPointAt(inc).x ,
-								innerOrbit.getPointAt(inc).y ,
-								0
-							);
-						teamsData[i] = constructTeamObject(i,teamPosition);
-
-						inc += 0.2;
-					}
-
-					inc = 0;
-
-					for(var i=5;i<16;i++){
-						teamPosition = new THREE.Vector3(
-								outerOrbit.getPointAt(inc).x ,
-								outerOrbit.getPointAt(inc).y ,
-								0
-							);
-						teamsData[i] = constructTeamObject(i,teamPosition);
-
-						inc += 0.090909;
-					}
-
-
-
-					// for(var i=5;i<16;i++){
-
-					// 	var position = new THREE.Vector3(-1350+(i%4)*900,-1350+Math.floor(i/4)*900,0);
-					// 	teamsData[i] = constructTeamObject(i,position);
-
-					// }
-
-					attactTest();
+					}, onProgress, onError);
 
 				}, onProgress, onError);
 
@@ -485,19 +435,6 @@
 
 		}, onProgress, onError);
 		
-		//加载导弹  模型和发射架的第二个部分其实是一样的，但是角度不同。为了方便还是重新加载另外一个
-		loader.load( './models/missile.dae', function ( collada ) {
-			missileDae = collada.scene;
-			missileDae.traverse( function ( child ) {
-				if ( child instanceof THREE.SkinnedMesh ) {
-						var animation = new THREE.Animation( child, child.geometry.animation );
-						animation.play();
-					}
-			});
-			missileDae.scale.set(10,10,10);
-			missileDae.rotation.x = 0;
-
-		}, onProgress, onError);
 
 
 		// grid
@@ -572,3 +509,15 @@
 
 	}
 
+
+
+	return {
+		init : function(){
+			init();
+			animate();
+		},
+		attack : function( startTeam , endTeam , serviceNum, time ){
+			attack( startTeam , endTeam , serviceNum, time );
+		}
+	};
+}();

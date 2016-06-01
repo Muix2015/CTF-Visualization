@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js canvas - particles - sprites</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				background-color: #000000;
+				margin: 0px;
+				overflow: hidden;
+			}
+
+			a {
+				color: #0078ff;
+			}
+		</style>
+	</head>
+	<body>
+
+		<script src="js/libs/three.min.js"></script>
+
+		<script src="js/renderers/Projector.js"></script>
+		<script src="js/controls/TrackballControls.js"></script>
+		<script src="js/libs/stats.min.js"></script>
+		<script src="js/libs/tween.min.js"></script>
+
+		<script>
+
+			var container, stats,controls;
+			var camera, scene, renderer, particle;
+			var mouseX = 0, mouseY = 0;
+
+			var windowHalfX = window.innerWidth / 2;
+			var windowHalfY = window.innerHeight / 2;
+
+			var curve = new THREE.SplineCurve3([
+							    new THREE.Vector3(0, 0, 0),
+							    new THREE.Vector3(2000, 0 , 1600), 
+							    new THREE.Vector3(4000 , 0, 1600),
+							    new THREE.Vector3(6000, 0, 0)
+							]);
+
+			var particleSystems = [];
+
+			init();
+			animate();
+
+
+
+
+			function makeSkybox( urls, size ) {
+
+				var skyboxCubemap = new THREE.CubeTextureLoader().load( urls );
+				skyboxCubemap.format = THREE.RGBFormat;
+				var skyboxShader = THREE.ShaderLib['cube'];
+				skyboxShader.uniforms['tCube'].value = skyboxCubemap;
+				return new THREE.Mesh(
+					new THREE.BoxGeometry( size, size, size ),
+					new THREE.ShaderMaterial({
+						fragmentShader : skyboxShader.fragmentShader, vertexShader : skyboxShader.vertexShader,
+						uniforms : skyboxShader.uniforms, depthWrite : false, side : THREE.BackSide
+					})
+				);
+
+			}
+
+			function initparticleSystems(){
+
+				var material = new THREE.SpriteMaterial( {
+						map: new THREE.CanvasTexture( generateSprite() ),
+						blending: THREE.AdditiveBlending
+					});
+
+				for(var i=0;i<20;i++){
+					var particleArr = {
+						available : true,
+						particles : []
+					};
+					for(var j=0;j<50;j++){
+						var particle = new THREE.Sprite( material );
+						particle.pos = 0;
+						particle.visible = false;
+						particleArr.particles.push(particle);
+						scene.add(particle);
+					}
+					console.log(particleArr);
+					particleSystems.push(particleArr);
+				}
+			}
+
+			// function pstest(){
+			// 	for(var i=0;i<particleSystems.length;i++){
+			// 		if(particleSystems[i].available){
+			// 			particleSystems[i].available = false;
+			// 			var ps = particleSystems[i];
+			// 			for(var j=0;j<ps.particles.length;j++){
+			// 				ps.particles[j].scale.set(320-j*5,320-j*5,320-j*5);
+			// 				initParticle( ps.particles[j], j * 10 );
+			// 				scene.add( ps.particles[j] );
+			// 			}
+			// 			break;
+			// 		}
+			// 	}
+			// }
+
+			function pstest(){
+				for(var i=0;i<particleSystems.length;i++){
+					if(particleSystems[i].available){
+						startParticles( particleSystems[i] ); 
+						break;
+					}
+				}
+			}
+
+			function init() {
+
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 100000 );
+				// camera.position.z = 1000;
+				camera.position.set( 0, -5600, 4000 );
+
+				scene = new THREE.Scene();
+
+				initparticleSystems();
+
+				// for ( var i = 0; i < 30; i++ ) {
+
+				// 	particle = new THREE.Sprite( material );
+				// 	particle.pos = 0;
+				// 	particle.scale.set(320-i*3.1,320-i*3.1,320-i*0.31);
+				// 	initParticle( particle, i * 10 );
+				// 	scene.add( particle );
+				// }
+				pstest();
+				renderer = new THREE.WebGLRenderer();
+				renderer.setClearColor( 0x000000 );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				container.appendChild( renderer.domElement );
+
+				controls = new THREE.TrackballControls(camera, renderer.domElement);
+				controls.rotateSpeed = 5.0;
+				controls.zoomSpeed = 2.2;
+				controls.panSpeed = 1;
+				controls.dynamicDampingFactor = 0.3;
+
+				stats = new Stats();
+				container.appendChild( stats.dom );
+
+				//
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+				var r = "img/skybox1/";
+				var urls = [ r + "px.jpg", r + "nx.jpg",
+							 r + "py.jpg", r + "ny.jpg",
+							 r + "pz.jpg", r + "nz.jpg" ];
+
+				scene.add( makeSkybox( urls, 50000 ) );
+
+			}
+
+			function onWindowResize() {
+
+				windowHalfX = window.innerWidth / 2;
+				windowHalfY = window.innerHeight / 2;
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			function generateSprite() {
+
+				var canvas = document.createElement( 'canvas' );
+				canvas.width = 16;
+				canvas.height = 16;
+
+				var context = canvas.getContext( '2d' );
+				var gradient = context.createRadialGradient( canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2 );
+				gradient.addColorStop( 0, 'rgba(255,0,0,1)' );
+				gradient.addColorStop( 0.2, 'rgba(255,10,10,1)' );
+				gradient.addColorStop( 0.4, 'rgba(64,0,0,1)' );
+				gradient.addColorStop( 1, 'rgba(0,0,0,1)' );
+
+				context.fillStyle = gradient;
+				context.fillRect( 0, 0, canvas.width, canvas.height );
+
+				return canvas;
+
+			}
+
+			// function initParticle( particle, delay ) {
+
+			// 	new TWEEN.Tween( particle )
+			// 		.delay( delay )
+			// 		.to( {pos:1}, 3000 )
+			// 		.onUpdate(function(){
+			// 			particle.position.copy(curve.getPointAt(particle.pos));
+			// 		})
+			// 		.onComplete(function(){
+			// 			particle.pos = 0;
+			// 			particle.visible = false;
+			// 		})
+			// 		.start();
+
+			// }
+
+			function startParticles( particleSystem ) {
+				
+				particleSystem.available = false;
+
+				var lastParticle = particleSystem.particles[particleSystem.particles.length-1];
+
+				for(var i=0;i<particleSystem.particles.length;i++){
+
+					var particle = particleSystem.particles[i];
+					particle.visible = true;
+					particle.scale.set(320-i*3.1,320-i*3.1,320-i*0.31);
+					new TWEEN.Tween( particle )
+						.delay( i*20 )
+						.to( {pos:1}, 1000 )
+						.onUpdate(function(){
+							this.position.copy(curve.getPointAt(this.pos));
+						})
+						.onComplete(function(){
+							this.pos = 0;
+							this.visible = false;
+							if(this === lastParticle){
+								particleSystem.available = true;
+							}			
+						})
+						.start();
+				}
+
+			}
+
+
+			//
+
+
+
+
+			//
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				render();
+				stats.update();
+				controls.update();
+
+			}
+
+			function render() {
+
+				TWEEN.update();
+
+				camera.lookAt( scene.position );
+
+				renderer.render( scene, camera );
+
+			}
+
+		</script>
+	</body>
+</html>
