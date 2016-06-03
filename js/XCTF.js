@@ -30,24 +30,38 @@ var XCTF = function () {
 
 
 
+	function attackCallback(defenderNumber,status) {
+		var defender = teamsData[defenderNumber-1];
+		if(status == 0){
+
+		}else{
+			defender.currentHP -= 1;
+			defender.logo.position.z -= 100;
+		}
+	}
+
 
 	/*
 	 * 攻击函数
-	 * @param startTeam 	攻击方
-	 * @param endTeam 		防守方
-	 * @param serviceNum    被攻击的服务编号
-	 * @param time          导弹飞行时间
+	 * @param timestamp     时间戳
+	 * @param attackerNumber 	攻击方编号(1-N)
+	 * @param defenderNumber 	防守方编号(1-N)
+	 * @param serviceNum    被攻击的服务编号(1-4)
+	 * @param status        攻击结果
 	 */
-	function attack( startNumber , endNumber , serviceNum, time ){
-		var startTeam = teamsData[startNumber];
-		var endTeam = teamsData[endNumber];
+	function attack( timestamp, attackerNumber, defenderNumber, serviceNum, status ){
+
+		var attacker = teamsData[attackerNumber-1];
+		var defender = teamsData[defenderNumber-1];
+
+		var time = 1800;
 
 		var missile = missileDae.clone();
 		var quaternion = new THREE.Quaternion();
 		var rotation = new THREE.Euler();
 
-		var startPos 	= 	startTeam.launcher.position;
-		var endPos 		= 	endTeam.services[serviceNum].position;
+		var startPos 	= 	attacker.launcher.position;
+		var endPos 		= 	defender.services[serviceNum].position;
 		var dx = endPos.x - startPos.x;
 		var dy = endPos.y - startPos.y;
 		var d = Math.sqrt(dx*dx+dy*dy);
@@ -65,43 +79,43 @@ var XCTF = function () {
 			pos : 0
 		}
 
-		var geometry = new THREE.Geometry();
-		geometry.vertices = trajectory.curve.getPoints(50);
-		var material = new THREE.LineBasicMaterial({color : 0xee00ee});
-		var line = new THREE.Line(geometry, material);
+		// var geometry = new THREE.Geometry();
+		// geometry.vertices = trajectory.curve.getPoints(50);
+		// var material = new THREE.LineBasicMaterial({color : 0xee00ee});
+		// var line = new THREE.Line(geometry, material);
 
-		// scene.add( line );
+		// // scene.add( line );
 
 
-		var tangent; 
+		// var tangent; 
 
-		//发射导弹
-		var launch = new TWEEN.Tween( trajectory )
-							.to({pos:1},time)
-							.onStart(function(){
-								scene.add(missile);
-								startTeam.launcher.children[1].visible = false;         
-							})
-							.onUpdate(function(){
+		// //发射导弹
+		// var launch = new TWEEN.Tween( trajectory )
+		// 					.to({pos:1},time)
+		// 					.onStart(function(){
+		// 						scene.add(missile);
+		// 						attacker.launcher.children[1].visible = false;         
+		// 					})
+		// 					.onUpdate(function(){
 						
-								missile.position.copy(trajectory.curve.getPointAt(trajectory.pos));  	//获取位置
-								tangent = trajectory.curve.getTangentAt(trajectory.pos).normalize();    //获取导弹轨迹曲线的切向方向向量
-								quaternion.setFromUnitVectors(missileVec , tangent);                    //根据切向向量和导弹初始方向向量计算四元数
-								rotation.setFromQuaternion(quaternion,'XYZ');							//将四元数转换成欧拉角
-								missile.rotation.set(rotation.x,rotation.y,rotation.z);
+		// 						missile.position.copy(trajectory.curve.getPointAt(trajectory.pos));  	//获取位置
+		// 						tangent = trajectory.curve.getTangentAt(trajectory.pos).normalize();    //获取导弹轨迹曲线的切向方向向量
+		// 						quaternion.setFromUnitVectors(missileVec , tangent);                    //根据切向向量和导弹初始方向向量计算四元数
+		// 						rotation.setFromQuaternion(quaternion,'XYZ');							//将四元数转换成欧拉角
+		// 						missile.rotation.set(rotation.x,rotation.y,rotation.z);
 								
-								// camera.position.copy(trajectory.curve.getPointAt(trajectory.pos)).add(cameraOffset);
-								// camera.lookAt(missile.position);
-								// particle(trajectory.pos*10);
+		// 						camera.position.copy(trajectory.curve.getPointAt(trajectory.pos)).add(cameraOffset);
+		// 						camera.lookAt(missile.position);
+		// 						// particle(trajectory.pos*10);
 
-							})
-							.onComplete(function(){
-								scene.remove(missile);
-								missile = null;
-								scene.remove(line);
-								line = null;
-								startTeam.launcher.children[1].visible = true;
-							});
+		// 					})
+		// 					.onComplete(function(){
+		// 						scene.remove(missile);
+		// 						missile = null;
+		// 						scene.remove(line);
+		// 						line = null;
+		// 						attacker.launcher.children[1].visible = true;
+		// 					});
 
 		var rot = launcherVec.angleTo(targetVec);
 
@@ -110,11 +124,11 @@ var XCTF = function () {
 
 
 		//旋转发射架 对准目标
-		var aim = new TWEEN.Tween( startTeam.launcher.rotation )
+		var aim = new TWEEN.Tween( attacker.launcher.rotation )
 						.to({z:rot},500)
 						.onComplete(function(){
-							launch.start();				//旋转完成后发射
-							startParticles(trajectory.curve , time);
+							// launch.start();				//旋转完成后发射
+							startParticles(defenderNumber,status,trajectory.curve , time );
 						})
 						.start();
 
@@ -143,34 +157,63 @@ var XCTF = function () {
 	}
 
 
+
+
 	function initparticleSystems(){
 
-		var canvas = document.createElement( 'canvas' );
-		canvas.width = 16;
-		canvas.height = 16;
+		var canvas1 = document.createElement( 'canvas' );
+		canvas1.width = 16;
+		canvas1.height = 16;
 
-		var context = canvas.getContext( '2d' );
-		var gradient = context.createRadialGradient( canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2 );
-		gradient.addColorStop( 0, 'rgba(255,0,0,1)' );
-		gradient.addColorStop( 0.2, 'rgba(255,10,10,1)' );
-		gradient.addColorStop( 0.4, 'rgba(64,0,0,1)' );
-		gradient.addColorStop( 1, 'rgba(0,0,0,1)' );
+		var materials = [];
 
-		context.fillStyle = gradient;
-		context.fillRect( 0, 0, canvas.width, canvas.height );
+		var context1 = canvas1.getContext( '2d' );
+		var gradient1 = context1.createRadialGradient( canvas1.width / 2, canvas1.height / 2, 0, canvas1.width / 2, canvas1.height / 2, canvas1.width / 2 );
+		gradient1.addColorStop( 0, 'rgba(255,0,0,1)' );
+		gradient1.addColorStop( 0.2, 'rgba(255,10,10,1)' );
+		gradient1.addColorStop( 0.4, 'rgba(64,0,0,1)' );
+		gradient1.addColorStop( 1, 'rgba(0,0,0,1)' );
+
+		context1.fillStyle = gradient1;
+		context1.fillRect( 0, 0, canvas1.width, canvas1.height );
 
 		var material = new THREE.SpriteMaterial( {
-				map: new THREE.CanvasTexture( canvas ),
+				map: new THREE.CanvasTexture( canvas1 ),
 				blending: THREE.AdditiveBlending
 			});
+		materials.push(material);
+
+		var canvas2 = document.createElement( 'canvas' );
+		canvas2.width = 16;
+		canvas2.height = 16;
+		var context2 = canvas2.getContext( '2d' );
+		var gradient2 = context2.createRadialGradient( canvas2.width / 2, canvas2.height / 2, 0, canvas2.width / 2, canvas2.height / 2, canvas2.width / 2 );
+		
+		
+		gradient2.addColorStop( 0, 'rgba(0,0,210,1)' );
+		gradient2.addColorStop( 0.2, 'rgba(10,10,210,1)' );
+		gradient2.addColorStop( 0.4, 'rgba(0,0,64,1)' );
+		gradient2.addColorStop( 1, 'rgba(0,0,0,1)' );
+
+
+		context2.fillStyle = gradient2;
+		context2.fillRect( 0, 0, canvas2.width, canvas2.height );
+
+		var material = new THREE.SpriteMaterial( {
+				map: new THREE.CanvasTexture( canvas2 ),
+				blending: THREE.AdditiveBlending
+			});
+		materials.push(material);
+
+		console.log(materials);
 
 		for(var i=0;i<20;i++){
 			var particleArr = {
 				available : true,
 				particles : []
 			};
-			for(var j=0;j<50;j++){
-				var particle = new THREE.Sprite( material );
+			for(var j=0;j<60;j++){
+				var particle = new THREE.Sprite( materials[i%2] );
 				particle.pos = 0;
 				particle.visible = false;
 				particleArr.particles.push(particle);
@@ -182,20 +225,21 @@ var XCTF = function () {
 
 
 
-	function startParticles(curve ,time ) {
+	function startParticles(defenderNumber,status,curve ,time) {
 		for(var i=0;i<particleSystems.length;i++){
 			if(particleSystems[i].available){
 
 				var particleSystem = particleSystems[i];
 				particleSystem.available = false;
 
+				var firstParticle = particleSystem.particles[0];
 				var lastParticle = particleSystem.particles[particleSystem.particles.length-1];
 
 				for(var i=0;i<particleSystem.particles.length;i++){
 
 					var particle = particleSystem.particles[i];
 					particle.visible = true;
-					particle.scale.set(50-i,50-i,100-i*0.2);
+					particle.scale.set(60-i,60-i,0);
 					new TWEEN.Tween( particle )
 						.delay( i*10 )
 						.to( {pos:1}, 1800 )
@@ -205,7 +249,9 @@ var XCTF = function () {
 						.onComplete(function(){
 							this.pos = 0;
 							this.visible = false;
-							if(this === lastParticle){
+							if(this === firstParticle){
+								attackCallback(defenderNumber,status);
+							}else if(this === lastParticle){
 								particleSystem.available = true;
 							}			
 						})
@@ -360,7 +406,7 @@ var XCTF = function () {
 				launcher : teamLauncherMesh,                          //导弹发射架
 				services : servicesArr,                               //服务
 				base : teamBaseMesh,                                  //发射架下方的棱台
-				logo : teamsOption.data[num].logo,                    //队伍LOGO 将来用于保存图片文件路径或名字
+				logo : logo,                                          //队伍LOGO 将来用于保存图片文件路径或名字
 				HP : 100,                                             //总血量
 				currentHP : 100,                                      //当前血量
 				position : teamLauncherMesh.position                  //位置
@@ -516,8 +562,8 @@ var XCTF = function () {
 			init();
 			animate();
 		},
-		attack : function( startTeam , endTeam , serviceNum, time ){
-			attack( startTeam , endTeam , serviceNum, time );
+		attack : function( attacker , defender , serviceNum, time ){
+			attack( attacker , defender , serviceNum, time );
 		}
 	};
 }();

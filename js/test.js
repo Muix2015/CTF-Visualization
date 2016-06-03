@@ -15,8 +15,31 @@ function attactTest(){
 }
 
 
+var stream = {};
+
+function test(){
+
+	var startIndex = Math.ceil(Math.random()*teamsOption.num );
+	var endIndex;
+	do{
+		endIndex = Math.ceil(Math.random()*teamsOption.num );
+	}while(endIndex == startIndex);
+
+	stream = {
+		timestamp : Date.parse(new Date())/1000,
+		attacker : startIndex,
+		defender : endIndex,
+		service :  Math.ceil(Math.random()*4),
+		status :  Math.ceil(Math.random()*2)-1
+	}
+	XCTF.attack(stream.timestamp,stream.attacker,stream.defender,stream.service,status);		
+	var time = Math.ceil(Math.random()*3000);
+	setTimeout(test,time);		//间隔一段时间后再次调用此函数
+}
+
+
 
 jQuery(document).ready(function() {    
    XCTF.init();
-   setTimeout(attactTest,1500); // 等待1.5秒（模型加载完成才能执行）
+   setTimeout(test,1500); // 等待1.5秒（模型加载完成才能执行）
 });
