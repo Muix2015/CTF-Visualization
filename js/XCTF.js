@@ -9,7 +9,7 @@ var XCTF = function () {
 	var missileDae;
 
 	var missileLauncher = new THREE.Group();					//发射架组，发射架的模型有两个部分，会先添加进Group中再进行操作
-	var teamFlag = new THREE.Group();                           //旗帜组  暂时没用到
+	var teamFlag        = new THREE.Group();                    //旗帜组  暂时没用到
 	var baseMesh;                 								//发射架底部棱台
 	var serviceMesh;                                            //周围的服务
 
@@ -18,10 +18,10 @@ var XCTF = function () {
 	var launcherVec = new THREE.Vector3(0,-1,0);
 
 	//偏移量   模型加载进来时的位置可能并不是在坐标原点，需要通过偏移量调整
-	var baseOffset = new THREE.Vector3(0,0,-60);
-	var serviceOffset =  new THREE.Vector3(0,0,0);
-	var logoOffset = new THREE.Vector3(0,0,330);
-	var cameraOffset = new THREE.Vector3(100,100,100);
+	var baseOffset    = new THREE.Vector3(0,0,-60);
+	var serviceOffset = new THREE.Vector3(0,0,0);
+	var logoOffset    = new THREE.Vector3(0,0,330);
+	var cameraOffset  = new THREE.Vector3(100,100,100);
 
 	//队伍数据数组,会保存每个队伍的模型和信息(如血量)
 	var teamsData = [];
@@ -233,7 +233,7 @@ var XCTF = function () {
 				particleSystem.available = false;
 
 				var firstParticle = particleSystem.particles[0];
-				var lastParticle = particleSystem.particles[particleSystem.particles.length-1];
+				var lastParticle  = particleSystem.particles[particleSystem.particles.length-1];
 
 				for(var i=0;i<particleSystem.particles.length;i++){
 

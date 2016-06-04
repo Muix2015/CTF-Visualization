@@ -10,7 +10,7 @@
 	var clock = new THREE.Clock();
 
 	var missileLauncher = new THREE.Group();					//发射架组，发射架的模型有两个部分，会先添加进Group中再进行操作
-	var teamFlag = new THREE.Group();                           //旗帜组  暂时没用到
+	var teamFlag        = new THREE.Group();                    //旗帜组  暂时没用到
 	var baseMesh;                 								//发射架底部棱台
 	var serviceMesh;                                            //周围的服务
 
@@ -19,9 +19,9 @@
 	var launcherVec = new THREE.Vector3(0,-1,0);
 
 	//偏移量   模型加载进来时的位置可能并不是在坐标原点，需要通过偏移量调整
-	var baseOffset = new THREE.Vector3(0,0,-60);
-	var serviceOffset =  new THREE.Vector3(0,0,0);
-	var logoOffset = new THREE.Vector3(0,0,330);
+	var baseOffset    = new THREE.Vector3(0,0,-60);
+	var serviceOffset = new THREE.Vector3(0,0,0);
+	var logoOffset    = new THREE.Vector3(0,0,330);
 
 	//队伍数据数组,会保存每个队伍的模型和信息(如血量)
 	var teamsData = [];
@@ -95,13 +95,13 @@
 
 		// roll-over helpers
 
-		teamGeo = new THREE.BoxGeometry( 50, 50, 50 );
+		teamGeo      = new THREE.BoxGeometry( 50, 50, 50 );
 		teamMaterial = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
-		teamMesh = new THREE.Mesh( teamGeo, teamMaterial );
+		teamMesh     = new THREE.Mesh( teamGeo, teamMaterial );
 
-		var baseGeo = new THREE.CylinderGeometry(80, 120, 120, 5, 3);
+		var baseGeo      = new THREE.CylinderGeometry(80, 120, 120, 5, 3);
 		var baseMaterial = new THREE.MeshPhongMaterial( { color: 0xe0e0e0 } );
-		var baseMesh = new THREE.Mesh( baseGeo, baseMaterial );
+		var baseMesh     = new THREE.Mesh( baseGeo, baseMaterial );
 		baseMesh.rotation.x = -RAD_90;
 		baseMesh.position.z = -60;
 
