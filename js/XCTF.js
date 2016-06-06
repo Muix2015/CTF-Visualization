@@ -271,7 +271,7 @@ var XCTF = function () {
 		document.body.appendChild( container );
 
 		camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 100000 );
-		camera.position.set( 0, -5600, 4000 );
+		camera.position.set( 0, -5000, 2900 );
 		// camera.rotation.x = RAD_90;
 		camera.lookAt( new THREE.Vector3() );
 

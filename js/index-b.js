@@ -25,6 +25,7 @@
 
 	//队伍数据数组,会保存每个队伍的模型和信息(如血量)
 	var teamsData = [];
+	var sphereMaterial;
 
 
 	init();
@@ -139,6 +140,80 @@
 		renderer.setSize( window.innerWidth, window.innerHeight );
 		container.appendChild( renderer.domElement );
 
+		var geometry = new THREE.SphereGeometry( 300, 32, 16 );
+		sphereMaterial = new THREE.MeshBasicMaterial( { color: 0x00aaff,  shininess: 10, opacity: 0.3, transparent: true } );
+		var mesh = new THREE.Mesh( geometry, sphereMaterial );
+		scene.add(mesh);
+ 		
+
+		//加载导弹发射架的第一个部分
+		loader.load( './models/MissileLauncherP1.dae', function ( collada ) {
+			var p1 = collada.scene;
+			p1.traverse( function ( child ) {
+				if ( child instanceof THREE.SkinnedMesh ) {
+						var animation = new THREE.Animation( child, child.geometry.animation );
+						animation.play();
+					}
+			});
+			// launcher.position.set(0,0,0);
+			p1.scale.set(20,20,20);
+			p1.rotation.x = 0;
+
+			// scene.add(p1);
+
+			//加载导弹发射架的第二个部分
+			loader.load( './models/MissileLauncherP2.dae', function ( collada ) {
+				var p2 = collada.scene;
+				p2.traverse( function ( child ) {
+					if ( child instanceof THREE.SkinnedMesh ) {
+							var animation = new THREE.Animation( child, child.geometry.animation );
+							animation.play();
+						}
+				});
+				p2.scale.set(20,20,20);
+				p2.rotation.x = 0;
+
+				missileLauncher.add(p1);
+				missileLauncher.add(p2);
+				missileLauncher.add(baseMesh);
+				scene.add(missileLauncher);
+
+				//加载服务的模型
+				loader.load( './models/glados.dae', function ( collada ) {
+					serviceMesh = collada.scene;
+					serviceMesh.traverse( function ( child ) {
+						if ( child instanceof THREE.SkinnedMesh ) {
+							var animation = new THREE.Animation( child, child.geometry.animation );
+							animation.play();
+						}
+					});
+					serviceMesh.scale.set(0.6,0.6,0.6);
+					serviceMesh.position.add(serviceOffset);
+					var orbit = new THREE.EllipseCurve(
+						0,  0,            
+						200, 200,          
+						0,  2*Math.PI,  
+						false,            
+						0                
+					);
+					var pos = 0;
+					for(var i=0;i<5;i++){
+						var service = serviceMesh.clone();
+						service.position.x = orbit.getPointAt(pos).x;
+						service.position.y = orbit.getPointAt(pos).y;
+						service.position.add(serviceOffset);
+						service.rotation.y = -i*2*Math.PI/5+RAD_90;
+						scene.add(service);
+						pos+=0.2;
+					}
+
+				}, onProgress, onError);
+
+			}, onProgress, onError);
+
+		}, onProgress, onError);
+		
+
 		//
 
 		window.addEventListener( 'resize', onWindowResize, false );
@@ -164,7 +239,9 @@
 
 
 	function render() {
-
+		var timer = 0.0001 * Date.now();
+		sphereMaterial.opacity = 0.3 + 0.3 * Math.sin( 15 * timer );
+		// console.log(sphereMaterial);
 		controls.update();
 		TWEEN.update();
 		stats.update();
