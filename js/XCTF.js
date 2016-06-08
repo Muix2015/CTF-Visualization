@@ -1,5 +1,7 @@
 var XCTF = function () {
 
+	var ready = false;
+
 	var container;
 	var camera, scene, renderer;
 	var RAD_90  = 90/180*Math.PI;            					//90度的弧度值，后面会多次用到 定义为变量减少运算
@@ -343,6 +345,8 @@ var XCTF = function () {
 				teamsData[i] = constructTeamObject( i, positionData[i] );
 			}
 
+			ready = true;
+
 		}
 
 
@@ -555,6 +559,10 @@ var XCTF = function () {
 
 	}
 
+	function isReady(){
+		return ready;
+	}
+
 
 
 	return {
@@ -564,6 +572,9 @@ var XCTF = function () {
 		},
 		attack : function( attacker , defender , serviceNum, time ){
 			attack( attacker , defender , serviceNum, time );
+		},
+		isReady : function(){
+			return isReady();
 		}
 	};
 }();

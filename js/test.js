@@ -41,5 +41,11 @@ function test(){
 
 jQuery(document).ready(function() {    
    XCTF.init();
-   setTimeout(test,1500); // 等待1.5秒（模型加载完成才能执行）
+   $('.test-btn').click(function(event) {
+   		if(XCTF.isReady()){
+   			test();
+   		}else{
+   			alert('还没有加载完成');
+   		}
+   });
 });
