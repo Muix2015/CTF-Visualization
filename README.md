@@ -1,5 +1,5 @@
 ﻿##CTF赛况实时3D效果
-在线展示: [DEMO](https://hujiulong.github.io/CTF-Visualization/)
+在线展示: [DEMO](http://lab.hujiulong.com/CTF/)
 
 ## 队伍数据
 配置文件: js/config/teamsOption.js
