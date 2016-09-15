@@ -78,7 +78,7 @@ var XCTF = function () {
 		var endPos 		= 	defender.services[ serviceNum - 1 ].position;
 		var dx = endPos.x - startPos.x;
 		var dz = endPos.z - startPos.z;
-		var d = Math.sqrt( dx*dx+dz*dz );
+		var d = Math.sqrt( dx * dx + dz * dz );
 
 		var targetVec = new THREE.Vector3( dx, 0, dz );							//指向目标的方向向量
 
@@ -646,12 +646,12 @@ var XCTF = function () {
 	}
 
 	function clearData() {
-		$( '.count').text( 0 );
-		$( '.flag').text( 0 );
-		$( '.score').text( 0 );
-		$( '.num1').text( 0 );
-		$( '.num2').text( 0 );
-		$( '.num3').text( 0 );
+		$( '.count' ).text( 0 );
+		$( '.flag' ).text( 0 );
+		$( '.score' ).text( 0 );
+		$( '.num1' ).text( 0 );
+		$( '.num2' ).text( 0 );
+		$( '.num3' ).text( 0 );
 	}
 
 
