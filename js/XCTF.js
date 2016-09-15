@@ -9,6 +9,7 @@ var XCTF = function () {
 	var VERSION = "1.0.0";
 
 	var ready = false;
+	var callback = null;
 
 	var container;
 	var camera, scene, renderer, controls;
@@ -40,33 +41,33 @@ var XCTF = function () {
 	var serviceMesh;                                            //周围的服务
 
 	//初始方向向量   用于计算角度
-	var logoVec    = new THREE.Vector3(0,0,1);
-	var centerVec  = new THREE.Vector3(0,0,1);
-	var serviceVec = new THREE.Vector3(0,0,-1);
+	var logoVec    = new THREE.Vector3( 0, 0, 1 );
+	var centerVec  = new THREE.Vector3( 0, 0, 1 );
+	var serviceVec = new THREE.Vector3( 0, 0, -1 );
 
 	//偏移量   模型加载进来时的位置可能并不是在坐标原点，需要通过偏移量调整
-	var serviceOffset = new THREE.Vector3(0,0,0);
-	var logoOffset    = new THREE.Vector3(0,400,0);
+	var serviceOffset = new THREE.Vector3( 0, 0, 0 );
+	var logoOffset    = new THREE.Vector3( 0, 400, 0 );
 
-	var cameraFocus  = new THREE.Vector3(0,-100,0);
+	var cameraFocus  = new THREE.Vector3( 0, -100, 0 );
 
 
-	//队伍数据数组,会保存每个队伍的模型和信息(如血量)
+	//队伍数据数组,会保存每个队伍的模型和信息( 如血量 )
 	var teamsData       = [];
 	var particleSystems = [];
 	var teamLogos       = [];
 
 	/*
 	 * 攻击函数
-	 * @param attackerNumber 	攻击方编号(1-N)
-	 * @param defenderNumber 	防守方编号(1-N)
-	 * @param serviceNum    被攻击的服务编号(1-4)
+	 * @param attackerNumber 	攻击方编号( 1-N )
+	 * @param defenderNumber 	防守方编号( 1-N )
+	 * @param serviceNum    被攻击的服务编号( 1-4 )
 	 * @param status        攻击结果
 	 */
 	function attack ( attackerNumber, defenderNumber, serviceNum, status ){
 
-		var attacker = teamsData[attackerNumber-1];
-		var defender = teamsData[defenderNumber-1];
+		var attacker = teamsData[ attackerNumber-1 ];
+		var defender = teamsData[ defenderNumber-1 ];
 
 		var time = 1800;
 
@@ -77,9 +78,9 @@ var XCTF = function () {
 		var endPos 		= 	defender.services[ serviceNum - 1 ].position;
 		var dx = endPos.x - startPos.x;
 		var dz = endPos.z - startPos.z;
-		var d = Math.sqrt(dx*dx+dz*dz);
+		var d = Math.sqrt( dx*dx+dz*dz );
 
-		var targetVec = new THREE.Vector3(dx,0,dz);							//指向目标的方向向量
+		var targetVec = new THREE.Vector3( dx, 0, dz );							//指向目标的方向向量
 
 		//轨迹  curve是轨迹的曲线   pos会用于后面tween中的计算
 		var trajectory = {
@@ -92,14 +93,14 @@ var XCTF = function () {
 			pos : 0
 		}
 
-		var rot = centerVec.angleTo(targetVec);
+		var rot = centerVec.angleTo( targetVec );
 
 		rot = dx > 0 ?rot :-rot;	//修正旋转角度
 
 		//旋转发射架 对准目标
 		var aim = new TWEEN.Tween( attacker.launcher.rotation )
 						.to( { y:rot },500 )
-						.onComplete(function(){
+						.onComplete( function( ){
 							startParticles( defenderNumber, serviceNum, status, trajectory.curve, time );
 						})
 						.start();
@@ -139,25 +140,25 @@ var XCTF = function () {
 
 				currentMode = guiOption.mode;
 
-			} ).name('镜头模式');
+			} ).name( '镜头模式' );
 
-		gui.add( guiOption, 'logoAdjust' ).name('旗帜始终朝向镜头');
+		gui.add( guiOption, 'logoAdjust' ).name( '旗帜始终朝向镜头' );
 		gui.add( guiOption, 'displayFps' )
 			.onChange( function(){
 				var val = guiOption.displayFps? '':'none';
-				document.getElementById('fps').style.display = val;
-			} ).name('显示FPS');
+				document.getElementById( 'fps' ).style.display = val;
+			} ).name( '显示FPS' );
 		gui.add( guiOption, 'displayUI' )
 			.onChange( function(){
 				var val = guiOption.displayUI? '':'none';
-				var tables = document.getElementsByClassName('ui');
-				for(var i=0;i<tables.length;i++){
-					tables[i].style.display = val;
+				var tables = document.getElementsByClassName( 'ui' );
+				for ( var i = 0; i < tables.length; i++ ){
+					tables[ i ].style.display = val;
 				}
-			} ).name('显示数据');
+			} ).name( '显示数据' );
 
-		gui.add( guiOption, 'clearData' ).name('清除历史数据');
-		gui.add( guiOption, 'fullscreen' ).name('全屏');
+		gui.add( guiOption, 'clearData' ).name( '清除历史数据' );
+		gui.add( guiOption, 'fullscreen' ).name( '全屏' );
 
 		gui.close();
 
@@ -189,8 +190,8 @@ var XCTF = function () {
 		var skyboxCubemap = new THREE.CubeTextureLoader().load( urls );
 
 		skyboxCubemap.format = THREE.RGBFormat;
-		var skyboxShader = THREE.ShaderLib['cube'];
-		skyboxShader.uniforms['tCube'].value = skyboxCubemap;
+		var skyboxShader = THREE.ShaderLib[ 'cube' ];
+		skyboxShader.uniforms[ 'tCube' ].value = skyboxCubemap;
 
 		var skybox = new THREE.Mesh(
 						new THREE.BoxGeometry( size, size, size ),
@@ -206,38 +207,43 @@ var XCTF = function () {
 
 	function initTeams (){
 
-		var loader = new THREE.ColladaLoader();
+		shieldMesh = new THREE.Mesh( 
+			new THREE.SphereGeometry( 200, 32, 32 ),
+			new THREE.MeshPhongMaterial( { color: 0x00aaff,  shininess: 10, opacity: 0.3, transparent: true } )
+		);
 
 		var onProgress = function ( xhr ) {
 			if ( xhr.lengthComputable ) {
-					var percentComplete = xhr.loaded / xhr.total * 100;
-					console.log( Math.round(percentComplete, 2) + '% downloaded' );
+				var percentComplete = xhr.loaded / xhr.total * 100;
+				console.log( Math.round(percentComplete, 2) + '% downloaded' );
 			}
 		};
 
 		var onError = function ( xhr ) {
 		};
 
-		shieldMesh = new THREE.Mesh( 
-			new THREE.SphereGeometry( 200, 32, 32 ),
-			new THREE.MeshPhongMaterial( { color: 0x00aaff,  shininess: 10, opacity: 0.3, transparent: true } )
-		);
+		var manager = new THREE.LoadingManager( function (){
+
+			constructTeams( teamsOption.teamNum );
+
+		}, onProgress, onError );
+		
+		var loader = new THREE.ColladaLoader( manager );
 
 		loader.load( './models/service.dae', function ( collada ) {
 
 			serviceMesh = collada.scene;
-			serviceMesh.scale.set(0.1,0.1,0.1);
-			serviceMesh.position.add(serviceOffset);
-			serviceMesh.rotation.set(0,0,0);
+			serviceMesh.scale.set( 0.1, 0.1, 0.1 );
+			serviceMesh.position.add( serviceOffset );
+			serviceMesh.rotation.set( 0, 0, 0 );
 
-			loader.load( './models/center.dae', function ( collada ) {
+		}, onProgress, onError);
 
-				centerMesh = collada.scene;
-				centerMesh.scale.set(25,45,25);
-				centerMesh.rotation.set(0,0,0);
-				constructTeams(teamsOption.teamNum);
+		loader.load( './models/center.dae', function ( collada ) {
 
-			}, onProgress, onError);
+			centerMesh = collada.scene;
+			centerMesh.scale.set( 25, 45, 25 );
+			centerMesh.rotation.set( 0, 0, 0 );
 
 		}, onProgress, onError);
 	}
@@ -246,11 +252,13 @@ var XCTF = function () {
 
 		var positionData = AllTeamsPositionData[ num ];
 
-		for(var i=0;i<num;i++){
-			teamsData[i] = constructTeamObject( i, positionData[i] );
+		for ( var i = 0; i < num; i++ ){
+			teamsData[ i ] = constructTeamObject( i, positionData[ i ] );
 		}
 
-		ready = true;
+		if( !!callback ) {
+			callback();
+		}
 
 	}
 
@@ -265,10 +273,10 @@ var XCTF = function () {
 
 		var context1 = canvas1.getContext( '2d' );
 		var gradient1 = context1.createRadialGradient( canvas1.width / 2, canvas1.height / 2, 0, canvas1.width / 2, canvas1.height / 2, canvas1.width / 2 );
-		gradient1.addColorStop( 0, 'rgba(255,0,0,1)' );
-		gradient1.addColorStop( 0.2, 'rgba(255,10,10,1)' );
-		gradient1.addColorStop( 0.4, 'rgba(64,0,0,1)' );
-		gradient1.addColorStop( 1, 'rgba(0,0,0,1)' );
+		gradient1.addColorStop( 0, 'rgba( 255,0, 0, 1 )' );
+		gradient1.addColorStop( 0.2, 'rgba( 255,10, 10, 1 )' );
+		gradient1.addColorStop( 0.4, 'rgba( 64,0, 0, 1 )' );
+		gradient1.addColorStop( 1, 'rgba( 0,0, 0, 1 )' );
 
 		context1.fillStyle = gradient1;
 		context1.fillRect( 0, 0, canvas1.width, canvas1.height );
@@ -277,7 +285,7 @@ var XCTF = function () {
 				map: new THREE.CanvasTexture( canvas1 ),
 				blending: THREE.AdditiveBlending
 			});
-		materials.push(material);
+		materials.push( material );
 
 		var canvas2 = document.createElement( 'canvas' );
 		canvas2.width = 16;
@@ -286,10 +294,10 @@ var XCTF = function () {
 		var gradient2 = context2.createRadialGradient( canvas2.width / 2, canvas2.height / 2, 0, canvas2.width / 2, canvas2.height / 2, canvas2.width / 2 );
 		
 		
-		gradient2.addColorStop( 0, 'rgba(0,0,210,1)' );
-		gradient2.addColorStop( 0.2, 'rgba(10,10,210,1)' );
-		gradient2.addColorStop( 0.4, 'rgba(0,0,64,1)' );
-		gradient2.addColorStop( 1, 'rgba(0,0,0,1)' );
+		gradient2.addColorStop( 0, 'rgba( 0,0, 210, 1 )' );
+		gradient2.addColorStop( 0.2, 'rgba( 10,10, 210, 1 )' );
+		gradient2.addColorStop( 0.4, 'rgba( 0,0, 64, 1 )' );
+		gradient2.addColorStop( 1, 'rgba( 0,0, 0, 1 )' );
 
 
 		context2.fillStyle = gradient2;
@@ -299,21 +307,21 @@ var XCTF = function () {
 				map: new THREE.CanvasTexture( canvas2 ),
 				blending: THREE.AdditiveBlending
 			});
-		materials.push(material);
+		materials.push( material );
 
-		for(var i=0;i<20;i++){
+		for ( var i = 0; i < 20; i++ ){
 			var particleArr = {
 				available : true,
 				particles : []
 			};
-			for(var j=0;j<60;j++){
-				var particle = new THREE.Sprite( materials[i%2] );
+			for ( var j=0; j<60; j++ ){
+				var particle = new THREE.Sprite( materials[ i%2 ] );
 				particle.pos = 0;
 				particle.visible = false;
-				particleArr.particles.push(particle);
-				scene.add(particle);
+				particleArr.particles.push( particle );
+				scene.add( particle );
 			}
-			particleSystems.push(particleArr);
+			particleSystems.push( particleArr );
 		}
 	}
 
@@ -321,33 +329,33 @@ var XCTF = function () {
 
 	function startParticles( defenderNumber, serviceNum, status, curve, time ) {
 
-		var defender = teamsData[defenderNumber-1];
+		var defender = teamsData[ defenderNumber-1 ];
 		var position = defender.position;
 		var targetService = defender.services[serviceNum -1];
 		var shieldSphere = new THREE.Sphere( position, 430 );
 
-		for(var i=0;i<particleSystems.length;i++){
-			if(particleSystems[i].available){
+		for ( var i = 0; i < particleSystems.length; i++ ){
+			if(particleSystems[ i ].available){
 
-				var particleSystem = particleSystems[i];
+				var particleSystem = particleSystems[ i ];
 				particleSystem.available = false;
 
-				var firstParticle = particleSystem.particles[0];
-				var lastParticle  = particleSystem.particles[particleSystem.particles.length-1];
+				var firstParticle = particleSystem.particles[ 0 ];
+				var lastParticle  = particleSystem.particles[ particleSystem.particles.length-1 ];
 
-				for(var i=0;i<particleSystem.particles.length;i++){
+				for ( var i = 0; i < particleSystem.particles.length; i++ ){
 
-					var particle = particleSystem.particles[i];
+					var particle = particleSystem.particles[ i ];
 					particle.visible = true;
 					particle.scale.set( 60-i, 60-i, 0 );
 					new TWEEN.Tween( particle )
 						.delay( i*10 )
 						.to( {pos:1}, 1800 )
-						.onUpdate(function(){
-							var point = curve.getPointAt(this.pos);
-							this.position.copy(point);
+						.onUpdate( function( ){
+							var point = curve.getPointAt( this.pos );
+							this.position.copy( point );
 							if( !status ){
-								if(!this.visible)
+								if( !this.visible )
 									return ;
 								// console.log(point.distanceTo( targetService.position ));
 								if( point.distanceTo( targetService.position ) < 200){
@@ -360,7 +368,7 @@ var XCTF = function () {
 									if(this === lastParticle){
 										new TWEEN.Tween( targetService.shield.material )
 											.to({ opacity : 0 }, 800 )
-											.onComplete(function(){
+											.onComplete( function( ){
 												targetService.shield.visible = false;
 											})
 											.start();
@@ -368,19 +376,19 @@ var XCTF = function () {
 								}
 							}
 						})
-						.onComplete(function(){
+						.onComplete( function( ){
 							this.pos = 0;
 							this.visible = false;
 							if(this === firstParticle){
 								
 								if( status ){
 
-									new TWEEN.Tween(targetService.children[0].children[1].material.color)
+									new TWEEN.Tween(targetService.children[ 0].children[1 ].material.color)
 													.to({r: 0.8,g: 0,b: 0},300)
-													.yoyo(true)
-													.repeat(1)
-													.onComplete(function(){
-														this.setRGB(0.9,0.9,0.9);	//还原颜色。虽然yoyo模式会自动还原，但特殊情况下不会还原
+													.yoyo( true )
+													.repeat( 1 )
+													.onComplete( function( ){
+														this.setRGB( 0.9, 0.9, 0.9 );	//还原颜色。虽然yoyo模式会自动还原，但某些特殊情况下不会还原
 													})
 													.start();
 								}
@@ -410,12 +418,12 @@ var XCTF = function () {
 		// var shield =    shieldMesh.clone();
 		// shield.material = shieldMesh.material.clone();
 
-		center.position.copy(position);
-		// shield.position.copy(position);
+		center.position.copy( position );
+		// shield.position.copy( position );
 		// shield.visible = false;
 
-		scene.add(center);
-		// scene.add(shield);
+		scene.add( center );
+		// scene.add( shield );
 
 		var orbit = new THREE.EllipseCurve(
 			position.x,  position.z,            
@@ -427,33 +435,33 @@ var XCTF = function () {
 
 		var pos=0;
 		var servicesArr = [];
-		for(var i=0;i<teamsOption.serviceNum;i++){
+		for ( var i = 0; i < teamsOption.serviceNum; i++){
 			var service = serviceMesh.clone();
 			service.shield =    shieldMesh.clone();
 			service.shield.visible = false;
 
 			service.shield.material = shieldMesh.material.clone();
-			service.children[0].children[1].material = serviceMesh.children[0].children[1].material.clone();
-			service.position.x = orbit.getPointAt(pos).x;
-			service.position.z = orbit.getPointAt(pos).y;
-			service.position.add(serviceOffset);
+			service.children[ 0].children[1 ].material = serviceMesh.children[ 0].children[1 ].material.clone();
+			service.position.x = orbit.getPointAt( pos ).x;
+			service.position.z = orbit.getPointAt( pos ).y;
+			service.position.add( serviceOffset );
 			service.rotation.y = 0;
 			service.shield.position.copy( service.position );
 			scene.add( service.shield );
 
-			var vec = new THREE.Vector3(service.position.x-position.x,service.position.y-position.y,service.position.z-position.z).normalize();
-			var rot = serviceVec.angleTo(vec);
+			var vec = new THREE.Vector3( service.position.x-position.x, service.position.y-position.y, service.position.z-position.z).normalize( );
+			var rot = serviceVec.angleTo( vec );
 			var 
 			rot = service.position.x-position.x < 0 ?rot :-rot;
 			// rot = dy > 0 ? -rot : dy==0 ? dx<0 ? -rot : rot : rot;
 			service.rotation.y= rot;
-			new TWEEN.Tween(service.position).to({y: 10},1000).delay(Math.random()*500).repeat( Infinity ).yoyo(true).start();
-			servicesArr.push(service);
-			scene.add(service);
+			new TWEEN.Tween( service.position ).to({y: 10},1000).delay( Math.random()*500 ).repeat( Infinity ).yoyo( true).start( );
+			servicesArr.push( service );
+			scene.add( service );
 			pos+=1/teamsOption.serviceNum;
 		}
 
-		var logoTexture =	THREE.ImageUtils.loadTexture( teamsOption.logoPath + teamsOption.teamData[num].logo );
+		var logoTexture =	THREE.ImageUtils.loadTexture( teamsOption.logoPath + teamsOption.teamData[ num ].logo );
 		var logoWidth = 0, logoHeight = 0;
 
 		if ( teamsOption.logoSize.w > teamsOption.logoSize.h ){
@@ -469,13 +477,13 @@ var XCTF = function () {
 		logoMat.transparent=true;
 		logoMat.opacity= 0.7;
 		var logo = new THREE.Mesh( logoGeo, logoMat );
-		logo.position.copy(position).add(logoOffset);
-		teamLogos.push(logo);
-		scene.add(logo);
+		logo.position.copy( position).add(logoOffset );
+		teamLogos.push( logo );
+		scene.add( logo );
 
 		return {
-			number : teamsOption.teamData[num].num,                 //队伍编号
-			name : teamsOption.teamData[num].name,                  //队伍名称
+			number : teamsOption.teamData[ num ].num,                 //队伍编号
+			name : teamsOption.teamData[ num ].name,                  //队伍名称
 			launcher : center,                          	        //导弹发射架
 			services : servicesArr,                                	//服务
 			logo : logo,                                         	//队伍LOGO 将来用于保存图片文件路径或名字
@@ -495,7 +503,7 @@ var XCTF = function () {
 		camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 100000 );
 		camera.position.copy( cameraInitPos );
 		camera.lookAt( cameraFocus );
-		cameraInitRot.copy(camera.rotation);
+		cameraInitRot.copy( camera.rotation );
 
 
 		scene = new THREE.Scene();
@@ -576,11 +584,11 @@ var XCTF = function () {
 
 	function logoAdjust() {
 
-		var rot = logoVec.angleTo(new THREE.Vector3( camera.position.x, 0, camera.position.z).normalize());
+		var rot = logoVec.angleTo(new THREE.Vector3( camera.position.x, 0, camera.position.z).normalize( ) );
 		rot = camera.position.x > 0? rot: -rot;
 
-		for(var i=0;i<teamLogos.length;i++){
-			teamLogos[i].rotation.y = rot;					//在旋转时旗帜一直朝向镜头
+		for ( var i = 0; i < teamLogos.length; i++ ){
+			teamLogos[ i ].rotation.y = rot;					//在旋转时旗帜一直朝向镜头
 		}
 
 	}
@@ -594,19 +602,19 @@ var XCTF = function () {
 
 		if( document.fullscreen || document.mozFullScreen || document.webkitIsFullScreen ){
 
-			if (document.exitFullscreen) { 
+			if ( document.exitFullscreen ) { 
 
 				document.exitFullscreen(); 
 
-			} else if (document.mozCancelFullScreen) { 
+			} else if ( document.mozCancelFullScreen ) { 
 
 				document.mozCancelFullScreen(); 
 
-			} else if (document.webkitCancelFullScreen) { 
+			} else if ( document.webkitCancelFullScreen ) { 
 
 				document.webkitCancelFullScreen(); 
 
-			} else if (document.msExitFullscreen) { 
+			} else if ( document.msExitFullscreen ) { 
 
 				document.msExitFullscreen(); 
 
@@ -616,19 +624,19 @@ var XCTF = function () {
 
 	    	var docElm = document.documentElement;
 
-			if (docElm.requestFullscreen) { 
+			if ( docElm.requestFullscreen ) { 
 			 
 			  docElm.requestFullscreen(); 
 			 
-			} else if (docElm.mozRequestFullScreen) { 
+			} else if ( docElm.mozRequestFullScreen ) { 
 			 
 			  docElm.mozRequestFullScreen(); 
 			 
-			} else if (docElm.webkitRequestFullScreen) { 
+			} else if ( docElm.webkitRequestFullScreen ) { 
 			 
 			  docElm.webkitRequestFullScreen(); 
 			 
-			} else if (elem.msRequestFullscreen) {
+			} else if ( elem.msRequestFullscreen ) {
 			 
 			 elem.msRequestFullscreen();
 			 
@@ -638,12 +646,12 @@ var XCTF = function () {
 	}
 
 	function clearData() {
-		$('.count').text(0);
-		$('.flag').text(0);
-		$('.score').text(0);
-		$('.num1').text(0);
-		$('.num2').text(0);
-		$('.num3').text(0);
+		$( '.count').text( 0 );
+		$( '.flag').text( 0 );
+		$( '.score').text( 0 );
+		$( '.num1').text( 0 );
+		$( '.num2').text( 0 );
+		$( '.num3').text( 0 );
 	}
 
 
@@ -667,15 +675,16 @@ var XCTF = function () {
 
 
 	return {
-		init : function(){
+		init : function( fn ){
+
+			callback = fn === undefined ? null : fn;
+
 			init();
 			animate();
+
 		},
 		attack : function( attacker, defender, serviceNum, status ){
 			attack( attacker, defender, serviceNum, status );
-		},
-		isReady : function(){
-			return isReady();
 		}
 	};
 }();

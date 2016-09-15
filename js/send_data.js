@@ -1,11 +1,11 @@
-var  settings = {       
+var settings = {       
 
-        // Websocket settings
-        // wsHost: "ws://172.16.0.11:32576/",
-        wsHost: "ws://202.112.51.207:32576/",
-        //wsHost: "ws://10.254.254.105:32576/",
-        psk: "18c989796c61724d4661b019f2779848dd69ae62",
-        wsTimeout: 30000
+    // Websocket settings
+    // wsHost: "ws://172.16.0.11:32576/",
+    teamws: "ws://202.112.51.211:32578/team/",
+    //wsHost: "ws://10.254.254.105:32576/",
+    psk: "18c989796c61724d4661b019f2779848dd69ae62",
+    wsTimeout: 30000
  }
 
 
@@ -128,32 +128,36 @@ function round_timer(){
 
 function start(){
 
-    if( XCTF.isReady() ){
+    UI.init();
+
+    XCTF.init( function(){
 
         service_score_timer();
         team_score_timer();
         team_attack();
         round_timer();
-        console.log('start');
-    }else{
-        setTimeout(start, 500);
-    }
+
+    } );
 
 }
 
 $('.playBtn').click(function(event) {
+
     $(this).hide().siblings().show();
     pause = false;
+
 });
 
 $('.stopBtn').click(function(event) {
+
     $(this).hide().siblings().show();
     pause = true;
+
 });
 
 
 $(function() {
-    UI.init();
-    XCTF.init();
+
     start();
+
 });

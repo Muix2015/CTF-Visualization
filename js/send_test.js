@@ -30,15 +30,14 @@ function test(){
     UI.attack( data.attacker, data.defender, data.service, data.status );
 
     if( !pause )
-        setTimeout(test,200);  
+        setTimeout(test,200); 
 }
 
 function start(){
-    if(!XCTF.isReady()){
-        setTimeout(start,1000);
-        return;
-    }
-    test();
+
+    UI.init();  
+    XCTF.init( test );
+
 }
 
 function init(){
@@ -56,8 +55,7 @@ function init(){
 
 
 jQuery(document).ready(function() {  
-    init();
-    UI.init();  
-    XCTF.init();
+
     start();
+
 });
