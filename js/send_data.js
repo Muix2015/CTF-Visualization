@@ -130,13 +130,23 @@ function start(){
 
     UI.init();
 
-    XCTF.init( function(){
+    XCTF.init( {
+        callback: function(){
 
-        service_score_timer();
-        team_score_timer();
-        team_attack();
-        round_timer();
+            service_score_timer();
+            team_score_timer();
+            team_attack();
+            round_timer();
 
+        },
+        progress: {
+            set: function( value ) {
+                $( '.progressBar' ).width( value );
+            },
+            remove: function(){
+                $( '.progressMask' ).hide();
+            }
+        }
     } );
 
 }

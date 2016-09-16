@@ -8,8 +8,15 @@ var XCTF = function () {
 
 	var VERSION = "1.0.0";
 
-	var ready = false;
-	var callback = null;
+	var options = {
+
+		callback: null,
+		progress: {
+			set: null,
+			remove: null
+		}
+
+	}
 
 	var container;
 	var camera, scene, renderer, controls;
@@ -213,10 +220,11 @@ var XCTF = function () {
 		);
 
 		var onProgress = function ( xhr ) {
-			if ( xhr.lengthComputable ) {
-				var percentComplete = xhr.loaded / xhr.total * 100;
-				console.log( Math.round(percentComplete, 2) + '% downloaded' );
+
+			if( !!options.progress.set && typeof options.progress.set === 'function' ) {
+				options.progress.set( xhr.loaded / xhr.total * 100 );
 			}
+
 		};
 
 		var onError = function ( xhr ) {
@@ -225,6 +233,10 @@ var XCTF = function () {
 		var manager = new THREE.LoadingManager( function (){
 
 			constructTeams( teamsOption.teamNum );
+
+			if( !!options.progress.remove && typeof options.progress.remove === 'function' ) {
+				options.progress.remove();
+			}
 
 		}, onProgress, onError );
 		
@@ -237,7 +249,7 @@ var XCTF = function () {
 			serviceMesh.position.add( serviceOffset );
 			serviceMesh.rotation.set( 0, 0, 0 );
 
-		}, onProgress, onError);
+		});
 
 		loader.load( './models/center.dae', function ( collada ) {
 
@@ -245,7 +257,7 @@ var XCTF = function () {
 			centerMesh.scale.set( 25, 45, 25 );
 			centerMesh.rotation.set( 0, 0, 0 );
 
-		}, onProgress, onError);
+		});
 	}
 
 	function constructTeams ( num ) {
@@ -256,8 +268,8 @@ var XCTF = function () {
 			teamsData[ i ] = constructTeamObject( i, positionData[ i ] );
 		}
 
-		if( !!callback ) {
-			callback();
+		if( !!options.callback ) {
+			options.callback();
 		}
 
 	}
@@ -593,11 +605,6 @@ var XCTF = function () {
 
 	}
 
-
-	function isReady() {
-		return ready;
-	}
-
 	function fullscreen() {
 
 		if( document.fullscreen || document.mozFullScreen || document.webkitIsFullScreen ){
@@ -675,9 +682,17 @@ var XCTF = function () {
 
 
 	return {
-		init : function( fn ){
+		init : function( optionObject ){
 
-			callback = fn === undefined ? null : fn;
+			for ( name in options ) {
+
+				if( !!optionObject[ name ] ) {
+
+					options[ name ] = optionObject[ name ];
+
+				}
+
+			}
 
 			init();
 			animate();

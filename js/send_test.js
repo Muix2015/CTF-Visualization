@@ -36,7 +36,17 @@ function test(){
 function start(){
 
     UI.init();  
-    XCTF.init( test );
+    XCTF.init( {
+        callback: test,
+        progress: {
+            set: function( value ) {
+                $( '.progressBar' ).width( value );
+            },
+            remove: function(){
+                $( '.progressMask' ).hide();
+            }
+        }
+    } );
 
 }
 

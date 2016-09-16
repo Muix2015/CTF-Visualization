@@ -318,3 +318,31 @@ canvas {
 	right: 240px;
 	top: 10px;
 }
+
+.progressMask {
+	position: absolute;
+	z-index: 100000;
+	width: 100%;
+	height: 100%;
+	background: #fff;
+}
+
+.progressMask .progress {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	margin-top: -16px;
+	margin-left: -200px;
+	width: 400px;
+	height: 32px;
+	background-color: #ddd;
+}
+
+.progressMask .progress .progressBar {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	height: 100%;
+	background-color: #26C281;
+	box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.15) inset;
+}
