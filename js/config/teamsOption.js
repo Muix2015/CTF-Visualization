@@ -38,12 +38,12 @@
 			{
 			    number : 4,
 			    name : "******",
-			    logo : "六星.png"
+			    logo : "6star.png"
 			},
 			{
 			    number : 5,
 			    name : "天枢",
-			    logo : "天枢.png"
+			    logo : "tianshu.png"
 			},
 			{
 			    number : 6,

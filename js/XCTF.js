@@ -219,13 +219,7 @@ var XCTF = function () {
 			new THREE.MeshPhongMaterial( { color: 0x00aaff,  shininess: 10, opacity: 0.3, transparent: true } )
 		);
 
-		var onProgress = function ( xhr ) {
-
-			if( !!options.progress.set && typeof options.progress.set === 'function' ) {
-				options.progress.set( xhr.loaded / xhr.total * 100 );
-			}
-
-		};
+		var progressValue = [ 0, 0 ];
 
 		var onError = function ( xhr ) {
 		};
@@ -238,7 +232,7 @@ var XCTF = function () {
 				options.progress.remove();
 			}
 
-		}, onProgress, onError );
+		});
 		
 		var loader = new THREE.ColladaLoader( manager );
 
@@ -249,7 +243,16 @@ var XCTF = function () {
 			serviceMesh.position.add( serviceOffset );
 			serviceMesh.rotation.set( 0, 0, 0 );
 
-		});
+		}, function( xhr ) {
+
+			progressValue[ 0 ] = xhr.loaded / xhr.total * 50;
+
+			if( !!options.progress.set && typeof options.progress.set === 'function' ) {
+				console.log( progressValue[ 0 ] + progressValue[ 1 ] )
+				options.progress.set( progressValue[ 0 ] + progressValue[ 1 ] );
+			}
+
+		}, onError );
 
 		loader.load( './models/center.dae', function ( collada ) {
 
@@ -257,7 +260,16 @@ var XCTF = function () {
 			centerMesh.scale.set( 25, 45, 25 );
 			centerMesh.rotation.set( 0, 0, 0 );
 
-		});
+		}, function( xhr ) {
+
+			progressValue[ 1 ] = xhr.loaded / xhr.total * 50;
+
+			if( !!options.progress.set && typeof options.progress.set === 'function' ) {
+				console.log( progressValue[ 0 ] + progressValue[ 1 ] )
+				options.progress.set( progressValue[ 0 ] + progressValue[ 1 ] );
+			}
+
+		}, onError );
 	}
 
 	function constructTeams ( num ) {

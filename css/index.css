@@ -342,6 +342,7 @@ canvas {
 	margin: 0;
 	padding: 0;
 	border: 0;
+	width: 0;
 	height: 100%;
 	background-color: #26C281;
 	box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.15) inset;
