@@ -1,5 +1,5 @@
 ﻿##CTF赛况实时3D效果
-在线展示: [DEMO](http://lab.hujiulong.com/CTF/)
+在线展示: [DEMO](https://hujiulong.github.io/CTF-Visualization/)
 
 ##初始化
 表格初始化 
@@ -70,7 +70,8 @@ var teamsOption = {
 	]
 }
 
-... 其余代码请勿修改
-...
+// 
+// ... 其余代码请勿修改
+// ...
 
 ```
