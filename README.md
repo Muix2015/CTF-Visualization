@@ -1,7 +1,7 @@
-﻿##CTF赛况实时3D效果
+﻿## CTF赛况实时3D效果
 在线展示: [DEMO](https://hujiulong.github.io/CTF-Visualization/)
 
-##初始化
+## 初始化
 表格初始化 
 ```javascript
 	UI.init();
