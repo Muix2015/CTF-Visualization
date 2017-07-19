@@ -6,19 +6,19 @@
 			h : 300
 		},
 
-		serviceNum : 6,
+		serviceNum : 4,
 
 		serviceData : [
 			"flag-robot",
 			"meng",
-			"missle", 
-			"oj", 
-			"msgstore", 
-			"mailbox"
+			"missle",
+			"oj"
+			// "msgstore",
+			// "mailbox"
 		],
 
-		teamNum : 13,			//队伍数量
-		
+		teamNum : 20,			//队伍数量
+
 		teamData :[
 			{
 			    number : 1,        //队伍编号(从1开始递增)
@@ -87,38 +87,38 @@
 			},
 			{
 			    number : 14,
-			    name : "NPC",
-			    logo : "13.png"
+			    name : "Noob",
+			    logo : "14.png"
 			},
 			{
 			    number : 15,
-			    name : "NPC",
-			    logo : "13.png"
+			    name : "XDD",
+			    logo : "15.png"
 			},
 			{
 			    number : 16,
-			    name : "NPC",
-			    logo : "13.png"
+			    name : "zjx",
+			    logo : "16.png"
 			},
 			{
 			    number : 17,
-			    name : "NPC",
-			    logo : "13.png"
+			    name : "Newbee",
+			    logo : "17.png"
 			},
 			{
 			    number : 18,
-			    name : "NPC",
-			    logo : "13.png"
+			    name : "Liquid",
+			    logo : "18.png"
 			},
 			{
 			    number : 19,
-			    name : "NPC",
-			    logo : "13.png"
+			    name : "VP",
+			    logo : "19.png"
 			},
 			{
 			    number : 20,
-			    name : "NPC",
-			    logo : "13.png"
+			    name : "Wings",
+			    logo : "20.png"
 			},
 			{
 			    number : 21,

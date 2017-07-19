@@ -76,7 +76,7 @@ var XCTF = function () {
         var attacker = teamsData[ attackerNumber - 1 ];
         var defender = teamsData[ defenderNumber - 1 ];
 
-        var time = 1800;
+        var time = 3600;
 
         var quaternion = new THREE.Quaternion();
         var rotation = new THREE.Euler();
@@ -192,7 +192,7 @@ var XCTF = function () {
 
         var size = 50000;
 
-        var r = "img/skybox1/";
+        var r = "img/skybox/";
         var urls = [
             r + "px.jpg", r + "nx.jpg",
             r + "py.jpg", r + "ny.jpg",
